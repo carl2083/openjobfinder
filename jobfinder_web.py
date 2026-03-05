@@ -555,6 +555,53 @@ def apply_seek_search(driver: webdriver.Chrome, config: Config) -> bool:
     return False
 
 
+def _switch_to_instant_mode(
+    driver: webdriver.Chrome,
+    log: Optional[Callable[[str], None]] = None,
+) -> None:
+    """尝试将 ChatGPT 切换到 Instant/Fast 模式，避免 Think 模式变慢。"""
+    try:
+        btns = driver.find_elements(
+            By.CSS_SELECTOR, "button[data-testid='model-switcher-dropdown-button']"
+        )
+        if not btns:
+            return
+        btn = btns[0]
+        label = (btn.get_attribute("aria-label") or btn.text or "").lower()
+        if "instant" in label or "fast" in label:
+            _log(log, "ChatGPT 已是 Instant/Fast 模式。")
+            return
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
+        time.sleep(0.3)
+        btn.click()
+        time.sleep(0.8)
+        for sel in [
+            "[data-radix-menu-content][data-state='open']",
+            "[role='menu']",
+            "[data-state='open']",
+        ]:
+            menus = driver.find_elements(By.CSS_SELECTOR, sel)
+            for menu in menus:
+                for variant in ("instant", "fast"):
+                    items = menu.find_elements(
+                        By.CSS_SELECTOR,
+                        f"[role='menuitem'][data-testid*='{variant}'], "
+                        f"[role='option'][data-testid*='{variant}']",
+                    )
+                    for el in items:
+                        if variant in (el.text or "").lower():
+                            el.click()
+                            _log(log, f"已切换到 {variant} 模式。")
+                            return
+                    for el in menu.find_elements(
+                        By.CSS_SELECTOR, "[role='menuitem'], [role='option']"
+                    ):
+                        if variant in (el.text or "").lower():
+                            el.click()
+                            _log(log, f"已切换到 {variant} 模式。")
+                            return
+    except Exception:
+        pass
 
 
 def send_prompt(
@@ -611,7 +658,9 @@ def send_prompt(
             except Exception:
                 driver.execute_script("arguments[0].click();", chat_links[0])
 
-        time.sleep(5)
+        time.sleep(2)
+        _switch_to_instant_mode(driver, log)
+        time.sleep(3)
         textarea = wait.until(
             EC.presence_of_element_located((By.ID, "prompt-textarea"))
         )

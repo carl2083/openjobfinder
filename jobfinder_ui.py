@@ -38,7 +38,9 @@ class JobFinderUI:
         self.chrome_path = tk.StringVar(value=self.config.chrome_path)
         self.seek_url = tk.StringVar(value=self.config.seek_url)
         self.chatgpt_url = tk.StringVar(value=self.config.chatgpt_url)
-        self.chatgpt_chat_title = tk.StringVar(value=self.config.chatgpt_chat_title)
+        self.chatgpt_chat_title = tk.StringVar(
+            value=self.config.chatgpt_chat_title or ""
+        )
         self.enable_local_sync = tk.BooleanVar(value=self.config.enable_local_sync)
         self.local_sync_path = tk.StringVar(value=self.config.local_sync_path)
         self.local_sync_pull_before_run = tk.BooleanVar(
@@ -145,12 +147,14 @@ class JobFinderUI:
         tk.Button(btn_frame, text="保存配置", command=self.save).pack(
             side=tk.LEFT, padx=4
         )
-        tk.Button(btn_frame, text="启动 Debug Chrome", command=self.launch_chrome).pack(
-            side=tk.LEFT, padx=4
+        self.btn_launch_chrome = tk.Button(
+            btn_frame, text="启动 Debug Chrome", command=self._on_launch_chrome
         )
-        tk.Button(btn_frame, text="开始运行", command=self.start_run).pack(
-            side=tk.LEFT, padx=4
+        self.btn_launch_chrome.pack(side=tk.LEFT, padx=4)
+        self.btn_start_run = tk.Button(
+            btn_frame, text="开始运行", command=self.start_run, state=tk.DISABLED
         )
+        self.btn_start_run.pack(side=tk.LEFT, padx=4)
         tk.Button(btn_frame, text="编辑 skill.md", command=self.edit_skill_file).pack(
             side=tk.LEFT, padx=4
         )
@@ -213,8 +217,7 @@ class JobFinderUI:
             chrome_path=self.chrome_path.get().strip(),
             seek_url=self.seek_url.get().strip() or "https://www.seek.com.au/",
             chatgpt_url=self.chatgpt_url.get().strip() or "https://chat.openai.com/",
-            chatgpt_chat_title=self.chatgpt_chat_title.get().strip()
-            or "Job application advice",
+            chatgpt_chat_title=self.chatgpt_chat_title.get().strip(),
             enable_local_sync=bool(self.enable_local_sync.get()),
             local_sync_path=self.local_sync_path.get().strip(),
             local_sync_pull_before_run=bool(self.local_sync_pull_before_run.get()),
@@ -241,7 +244,12 @@ class JobFinderUI:
         save_config(CONFIG_PATH, self.config)
         messagebox.showinfo("JobFinder", "配置已保存。")
 
-    def launch_chrome(self) -> None:
+    def _on_launch_chrome(self) -> None:
+        if self.launch_chrome():
+            self.btn_launch_chrome.config(state=tk.DISABLED)
+            self.btn_start_run.config(state=tk.NORMAL)
+
+    def launch_chrome(self) -> bool:
         config = self._read_config()
         chrome_path = config.chrome_path.strip()
         if not chrome_path:
@@ -250,7 +258,7 @@ class JobFinderUI:
                 self.chrome_path.set(chrome_path)
             else:
                 messagebox.showerror("JobFinder", "请填写 Chrome 路径。")
-                return
+                return False
 
         user_dir = config.chrome_user_data_dir.strip()
         if not user_dir:
@@ -279,7 +287,7 @@ class JobFinderUI:
             self.log_message("已通过 start 启动 Chrome Debug。")
         except FileNotFoundError:
             messagebox.showerror("JobFinder", "找不到 Chrome 可执行文件。")
-            return
+            return False
 
         def open_chatgpt_tab():
             time.sleep(1)
@@ -299,6 +307,7 @@ class JobFinderUI:
 
         threading.Thread(target=open_chatgpt_tab, daemon=True).start()
         self.log_message("已尝试打开 Seek 和 ChatGPT 标签页。")
+        return True
 
 
     def start_run(self) -> None:
