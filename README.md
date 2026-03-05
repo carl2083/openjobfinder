@@ -4,21 +4,6 @@
 
 ---
 
-## 上传到 GitHub / 保护个人信息
-
-### 首次上传步骤
-
-`.gitignore` 已配置，会自动排除 `config.json`、`skill.md`、`job_results.xlsx`、`pdf_output/`、`chrome-profile/` 等含个人信息的文件。
-
-```bash
-git init
-git add .
-git status   # 确认 config.json、skill.md 等不在列表中
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/JobFinder.git
-git push -u origin main
-```
 
 ### 新用户克隆后
 
