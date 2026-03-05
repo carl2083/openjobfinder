@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navy Gold Template</title>
+    <meta name="template-name" content="Navy Gold Template">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            background-color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+        }
+
+        .resume-container {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            background-color: white;
+            box-shadow: none;
+            min-height: auto;
+        }
+
+        /* Header Styles */
+        .resume-header {
+            padding: 2.5rem;
+            padding-top: 1rem;
+            padding-bottom: 0.25rem;
+            background-color: #1a2233;
+        }
+
+        .resume-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #c4a03c;
+        }
+
+        .job-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.25rem;
+            color: white;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1.5rem;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .contact-icon {
+            width: 14px;
+            height: 14px;
+            fill: #c4a03c;
+            color: #c4a03c;
+        }
+
+        .gold-line {
+            margin-top: 0.2rem;
+            margin-bottom: 0;
+            border-bottom: 2px solid #c4a03c;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 0 2.5rem 1rem 2.5rem;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 0.66rem;
+            break-inside: auto;
+            page-break-inside: auto;
+        }
+
+        .section-header {
+            margin-bottom: 0.5rem;
+            background-color: #1a2233;
+            margin-left: -2.5rem;
+            margin-right: -2.5rem;
+            break-after: avoid-page;
+            page-break-after: avoid;
+        }
+
+        .section-title {
+            padding: 0.5rem 2.5rem;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 16px;
+        }
+
+        .section-content {
+            color: #333;
+        }
+
+        /* About Me */
+        .about-text {
+            line-height: 1.375;
+            text-align: justify;
+        }
+
+        .content-block {
+            white-space: pre-wrap;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        /* Experience Styles */
+        .experience-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.66rem;
+        }
+
+        .experience-item {
+            position: relative;
+        }
+
+        .experience-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.125rem;
+        }
+
+        .company-location {
+            color: #333;
+        }
+
+        .company-name {
+            font-weight: bold;
+            color: #444;
+        }
+
+        .location {
+            color: #666;
+        }
+
+        .date {
+            color: #555;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .role {
+            font-weight: bold;
+            color: #c4a03c;
+            margin-bottom: 0.375rem;
+        }
+
+        .responsibilities {
+            margin-left: 1.25rem;
+            line-height: 1.375;
+        }
+
+        .responsibilities li {
+            margin-bottom: 0.08rem;
+            padding-left: 0.25rem;
+            color: #333;
+        }
+
+        .responsibilities li::marker {
+            color: #333;
+        }
+
+        /* Education Styles */
+        .education-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.625rem;
+        }
+
+        .education-item {
+            /* spacing handled by parent gap */
+        }
+
+        .institution-location {
+            display: flex;
+            align-items: baseline;
+            gap: 0.25rem;
+        }
+
+        .institution {
+            font-weight: bold;
+            color: #444;
+        }
+
+        .degree {
+            font-weight: bold;
+            color: #c4a03c;
+        }
+
+        /* Skills Styles */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            column-gap: 3rem;
+            row-gap: 0.5rem;
+            padding-top: 0.5rem;
+            break-inside: auto;
+            page-break-inside: auto;
+        }
+
+        .skill-item {
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background-color: white;
+            }
+            
+            .resume-container {
+                max-width: 100%;
+                box-shadow: none;
+            }
+            
+            .resume-header,
+            .section-header {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="resume-container">
+        <!-- Template Name: Navy Gold Template -->
+        <header class="resume-header">
+            <h1 class="resume-name">{{HEADER_NAME}}</h1>
+            <h2 class="job-title">{{HEADER_TITLE}}</h2>
+
+            <div class="contact-info">
+                <div class="contact-item"><span>{{HEADER_ADDRESS}}</span></div>
+                <div class="contact-item"><span>{{HEADER_PHONE}}</span></div>
+                <div class="contact-item"><span>{{HEADER_EMAIL}}</span></div>
+            </div>
+
+            <div class="gold-line"></div>
+        </header>
+
+        <main class="main-content">
+            {{RESUME_SECTIONS}}
+            {{COVER_SECTION}}
+        </main>
+    </div>
+</body>
+</html>

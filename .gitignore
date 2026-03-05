@@ -1,0 +1,32 @@
+# 个人配置与数据（含敏感信息，勿上传）
+config.json
+skill.md
+job_results.xlsx
+job_results.xlsx.corrupt-*
+
+# 输出文件
+pdf_output/
+
+# Chrome 调试配置（含登录态等）
+chrome-profile/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统
+.DS_Store
+Thumbs.db
