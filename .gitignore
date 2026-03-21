@@ -6,6 +6,7 @@ job_results.xlsx.corrupt-*
 
 # 输出文件
 pdf_output/
+pdf_output_test/
 
 # Chrome 调试配置（含登录态等）
 chrome-profile/

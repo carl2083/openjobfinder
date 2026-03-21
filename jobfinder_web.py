@@ -974,8 +974,8 @@ def run_web_flow(
                 _log(log, "推荐页未找到职位链接。")
 
         if apply_seek_search(driver, config):
-            _log(log, "已应用搜索条件，等待结果加载。")
-            time.sleep(3)
+            _log(log, "已应用搜索条件，等待结果加载...")
+            time.sleep(6)  # 地址/搜索后页面加载较慢，多等一会
         else:
             _log(log, "未自动填入搜索条件，请手动确认结果页。")
 
@@ -1012,7 +1012,11 @@ def run_web_flow(
             driver.switch_to.window(seek_handle)
             links = collect_job_links(driver, limit=None)
             if not links:
-                _log(log, "未找到任何职位链接，请检查 Seek 页。")
+                _log(log, "未找到职位链接，再等待 5 秒重试...")
+                time.sleep(5)
+                links = collect_job_links(driver, limit=None)
+            if not links:
+                _log(log, "仍未找到职位链接，请检查 Seek 页。")
                 break
 
             # 用当前页 URL 作为返回地址，避免翻页后回到第 1 页
