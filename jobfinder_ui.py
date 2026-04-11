@@ -608,7 +608,6 @@ class JobFinderWindow(QMainWindow):
             return False
 
         seek_url = config.seek_url or "https://www.seek.com.au/"
-        chatgpt_url = config.chatgpt_url or "https://chat.openai.com/"
         cmd = [
             "open",
             "-na",
@@ -618,7 +617,6 @@ class JobFinderWindow(QMainWindow):
             f"--user-data-dir={user_dir}",
             "--new-window",
             seek_url,
-            chatgpt_url,
         ]
 
         try:
@@ -633,7 +631,9 @@ class JobFinderWindow(QMainWindow):
         self.signals.summary.emit("Opening Seek and ChatGPT. Log in there, then click Continue Run.")
 
         def finalize_browser_setup() -> None:
-            time.sleep(5)
+            time.sleep(3)
+            self._open_chatgpt_tab_mac(config, chrome_path, user_dir)
+            time.sleep(4)
             cleared = clear_chatgpt_draft_via_debugger(config, log=self.log_message)
             self.signals.status.emit("Ready")
             if cleared:
@@ -642,8 +642,24 @@ class JobFinderWindow(QMainWindow):
                 self.signals.summary.emit("Browser is ready. Finish login, then click Continue Run.")
 
         threading.Thread(target=finalize_browser_setup, daemon=True).start()
-        self.log_message("Attempted to open Seek and ChatGPT on macOS.")
+        self.log_message("Opened Seek first on macOS and queued ChatGPT to open next.")
         return True
+
+    def _open_chatgpt_tab_mac(self, config: Config, chrome_path: str, user_dir: str) -> None:
+        chatgpt_url = config.chatgpt_url or "https://chat.openai.com/"
+        cmd = [
+            chrome_path,
+            f"--remote-debugging-port={config.chrome_debug_port}",
+            f"--user-data-dir={user_dir}",
+            "--new-tab",
+            chatgpt_url,
+        ]
+        try:
+            proc = subprocess.Popen(cmd)
+            self.chrome_processes.append(proc)
+            self.log_message("ChatGPT tab opened on macOS.")
+        except Exception as exc:
+            self.log_message(f"Failed to open ChatGPT tab on macOS: {exc}")
 
     def start_run(self) -> None:
         self.config = self._read_config()
