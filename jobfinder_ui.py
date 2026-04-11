@@ -616,7 +616,7 @@ class JobFinderWindow(QMainWindow):
             f"--remote-debugging-port={config.chrome_debug_port}",
             f"--user-data-dir={user_dir}",
             "--new-window",
-            seek_url,
+            "about:blank",
         ]
 
         try:
@@ -632,34 +632,40 @@ class JobFinderWindow(QMainWindow):
 
         def finalize_browser_setup() -> None:
             time.sleep(3)
-            self._open_chatgpt_tab_mac(config, chrome_path, user_dir)
+            tabs_opened = self._open_seek_and_chatgpt_tabs_mac(config)
             time.sleep(4)
             cleared = clear_chatgpt_draft_via_debugger(config, log=self.log_message)
             self.signals.status.emit("Ready")
-            if cleared:
+            if tabs_opened and cleared:
                 self.signals.summary.emit("Seek and ChatGPT opened. Finish login, then click Continue Run.")
+            elif tabs_opened:
+                self.signals.summary.emit("Seek and ChatGPT tabs opened. Finish login, then click Continue Run.")
             else:
                 self.signals.summary.emit("Browser is ready. Finish login, then click Continue Run.")
 
         threading.Thread(target=finalize_browser_setup, daemon=True).start()
-        self.log_message("Opened Seek first on macOS and queued ChatGPT to open next.")
+        self.log_message("Launched Chrome on macOS and queued Seek + ChatGPT tabs.")
         return True
 
-    def _open_chatgpt_tab_mac(self, config: Config, chrome_path: str, user_dir: str) -> None:
+    def _open_seek_and_chatgpt_tabs_mac(self, config: Config) -> bool:
+        seek_url = config.seek_url or "https://www.seek.com.au/"
         chatgpt_url = config.chatgpt_url or "https://chat.openai.com/"
-        cmd = [
-            chrome_path,
-            f"--remote-debugging-port={config.chrome_debug_port}",
-            f"--user-data-dir={user_dir}",
-            "--new-tab",
-            chatgpt_url,
+        script = [
+            'tell application "Google Chrome"',
+            "activate",
+            "if (count of windows) = 0 then make new window",
+            f'set URL of active tab of front window to "{seek_url}"',
+            f'make new tab at end of tabs of front window with properties {{URL:\"{chatgpt_url}\"}}',
+            "set active tab index of front window to 1",
+            "end tell",
         ]
         try:
-            proc = subprocess.Popen(cmd)
-            self.chrome_processes.append(proc)
-            self.log_message("ChatGPT tab opened on macOS.")
+            subprocess.run(["osascript", *sum([["-e", line] for line in script], [])], check=True)
+            self.log_message("Seek and ChatGPT tabs opened on macOS.")
+            return True
         except Exception as exc:
-            self.log_message(f"Failed to open ChatGPT tab on macOS: {exc}")
+            self.log_message(f"Failed to open Seek and ChatGPT tabs on macOS: {exc}")
+            return False
 
     def start_run(self) -> None:
         self.config = self._read_config()
