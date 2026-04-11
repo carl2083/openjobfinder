@@ -168,41 +168,34 @@ class JobFinderUI:
         self.show_section("basic")
 
     def _build_simple_ui(self) -> None:
-        self.root.configure(bg="#f4f4f4")
         self.root.geometry("900x860")
         self.root.minsize(760, 720)
 
-        shell = tk.Frame(self.root, bg="#f4f4f4")
+        shell = tk.Frame(self.root)
         shell.pack(fill=tk.BOTH, expand=True)
 
-        header = tk.Frame(shell, bg="#f4f4f4", padx=14, pady=12)
+        header = tk.Frame(shell, padx=14, pady=12)
         header.pack(fill=tk.X)
         tk.Label(
             header,
             text="JobFinder (macOS Safe Mode)",
-            bg="#f4f4f4",
-            fg="#111111",
             font=(_font_family("display"), 22, "bold"),
         ).pack(anchor="w")
         tk.Label(
             header,
             text="Plain single-column form UI. No sidebar. No style dropdowns. Focused on stable rendering.",
-            bg="#f4f4f4",
-            fg="#444444",
             font=(_font_family(), 11),
             justify="left",
         ).pack(anchor="w", pady=(4, 0))
         tk.Label(
             header,
             textvariable=self.summary_var,
-            bg="#f4f4f4",
-            fg="#444444",
             font=(_font_family(), 10),
             justify="left",
             wraplength=820,
         ).pack(anchor="w", pady=(4, 0))
 
-        actions = tk.Frame(shell, bg="#f4f4f4", padx=14, pady=4)
+        actions = tk.Frame(shell, padx=14, pady=4)
         actions.pack(fill=tk.X)
         tk.Button(
             actions,
@@ -231,19 +224,10 @@ class JobFinderUI:
             font=(_font_family(), 10),
         ).pack(side=tk.LEFT)
 
-        scroll_wrap = tk.Frame(shell, bg="#f4f4f4", padx=14, pady=10)
-        scroll_wrap.pack(fill=tk.BOTH, expand=True)
-        canvas = tk.Canvas(scroll_wrap, bg="#f4f4f4", highlightthickness=0)
-        scrollbar = tk.Scrollbar(scroll_wrap, orient="vertical", command=canvas.yview)
-        self.simple_form_body = tk.Frame(canvas, bg="#f4f4f4")
-        self.simple_form_body.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all")),
-        )
-        canvas.create_window((0, 0), window=self.simple_form_body, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        form_wrap = tk.Frame(shell, padx=14, pady=10)
+        form_wrap.pack(fill=tk.BOTH, expand=True)
+        self.simple_form_body = tk.Frame(form_wrap)
+        self.simple_form_body.pack(fill=tk.BOTH, expand=True)
 
         self._mac_section_title("Basic Setup")
         self._mac_entry_row("Job Location", self.job_location)
@@ -298,19 +282,15 @@ class JobFinderUI:
         tk.Label(
             self.simple_form_body,
             textvariable=self.status_var,
-            bg="#f4f4f4",
-            fg="#111111",
             font=(_font_family(), 14, "bold"),
             anchor="w",
         ).pack(fill=tk.X, pady=(8, 10))
 
-        log_wrap = tk.Frame(shell, bg="#f4f4f4", padx=14, pady=12)
+        log_wrap = tk.Frame(shell, padx=14, pady=12)
         log_wrap.pack(fill=tk.BOTH, expand=False)
         tk.Label(
             log_wrap,
             text="Run Log",
-            bg="#f4f4f4",
-            fg="#111111",
             font=(_font_family(), 12, "bold"),
         ).pack(anchor="w")
         self.log = tk.Text(
@@ -328,8 +308,6 @@ class JobFinderUI:
         tk.Label(
             self.simple_form_body,
             text=text,
-            bg="#f4f4f4",
-            fg="#111111",
             font=(_font_family(), 13, "bold"),
             anchor="w",
         ).pack(fill=tk.X, pady=(10, 6))
@@ -338,8 +316,6 @@ class JobFinderUI:
         tk.Label(
             self.simple_form_body,
             text=label,
-            bg="#f4f4f4",
-            fg="#333333",
             font=(_font_family(), 10),
             anchor="w",
         ).pack(fill=tk.X)
@@ -357,10 +333,6 @@ class JobFinderUI:
             self.simple_form_body,
             text=label,
             variable=var,
-            bg="#f4f4f4",
-            fg="#111111",
-            activebackground="#f4f4f4",
-            activeforeground="#111111",
             font=(_font_family(), 10),
             anchor="w",
         ).pack(fill=tk.X, pady=(0, 4))
