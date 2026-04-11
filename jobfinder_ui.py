@@ -30,6 +30,7 @@ BORDER = "#d7dce5"
 ACCENT = "#0f172a"
 ACCENT_SOFT = "#dbe7ff"
 ACCENT_TEXT = "#163152"
+MACOS_SAFE_MODE_VERSION = "macOS Safe Mode v4"
 
 
 def _font_family(kind: str = "body") -> str:
@@ -44,7 +45,9 @@ class JobFinderUI:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.simple_mode = sys.platform == "darwin"
-        self.root.title("JobFinder (macOS Safe Mode)" if self.simple_mode else "JobFinder")
+        self.root.title(
+            f"JobFinder ({MACOS_SAFE_MODE_VERSION})" if self.simple_mode else "JobFinder"
+        )
         self.root.configure(bg=SURFACE_BG)
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -168,34 +171,41 @@ class JobFinderUI:
         self.show_section("basic")
 
     def _build_simple_ui(self) -> None:
+        self.root.configure(bg="#dcdcdc")
         self.root.geometry("900x860")
         self.root.minsize(760, 720)
 
-        shell = tk.Frame(self.root)
+        shell = tk.Frame(self.root, bg="#dcdcdc")
         shell.pack(fill=tk.BOTH, expand=True)
 
-        header = tk.Frame(shell, padx=14, pady=12)
+        header = tk.Frame(shell, bg="#dcdcdc", padx=14, pady=12)
         header.pack(fill=tk.X)
         tk.Label(
             header,
-            text="JobFinder (macOS Safe Mode)",
+            text=f"JobFinder ({MACOS_SAFE_MODE_VERSION})",
+            bg="#dcdcdc",
+            fg="#111111",
             font=(_font_family("display"), 22, "bold"),
         ).pack(anchor="w")
         tk.Label(
             header,
             text="Plain single-column form UI. No sidebar. No style dropdowns. Focused on stable rendering.",
+            bg="#dcdcdc",
+            fg="#222222",
             font=(_font_family(), 11),
             justify="left",
         ).pack(anchor="w", pady=(4, 0))
         tk.Label(
             header,
             textvariable=self.summary_var,
+            bg="#dcdcdc",
+            fg="#333333",
             font=(_font_family(), 10),
             justify="left",
             wraplength=820,
         ).pack(anchor="w", pady=(4, 0))
 
-        actions = tk.Frame(shell, padx=14, pady=4)
+        actions = tk.Frame(shell, bg="#dcdcdc", padx=14, pady=4)
         actions.pack(fill=tk.X)
         tk.Button(
             actions,
@@ -224,9 +234,16 @@ class JobFinderUI:
             font=(_font_family(), 10),
         ).pack(side=tk.LEFT)
 
-        form_wrap = tk.Frame(shell, padx=14, pady=10)
+        form_wrap = tk.Frame(shell, bg="#dcdcdc", padx=14, pady=10)
         form_wrap.pack(fill=tk.BOTH, expand=True)
-        self.simple_form_body = tk.Frame(form_wrap)
+        self.simple_form_body = tk.Frame(
+            form_wrap,
+            bg="#ffffff",
+            bd=1,
+            relief="solid",
+            padx=14,
+            pady=14,
+        )
         self.simple_form_body.pack(fill=tk.BOTH, expand=True)
 
         self._mac_section_title("Basic Setup")
@@ -282,15 +299,19 @@ class JobFinderUI:
         tk.Label(
             self.simple_form_body,
             textvariable=self.status_var,
+            bg="#ffffff",
+            fg="#111111",
             font=(_font_family(), 14, "bold"),
             anchor="w",
         ).pack(fill=tk.X, pady=(8, 10))
 
-        log_wrap = tk.Frame(shell, padx=14, pady=12)
+        log_wrap = tk.Frame(shell, bg="#dcdcdc", padx=14, pady=12)
         log_wrap.pack(fill=tk.BOTH, expand=False)
         tk.Label(
             log_wrap,
             text="Run Log",
+            bg="#dcdcdc",
+            fg="#111111",
             font=(_font_family(), 12, "bold"),
         ).pack(anchor="w")
         self.log = tk.Text(
@@ -298,6 +319,9 @@ class JobFinderUI:
             height=12,
             relief="sunken",
             bd=1,
+            bg="#ffffff",
+            fg="#111111",
+            insertbackground="#111111",
             font=("Menlo", 10),
             padx=8,
             pady=8,
@@ -308,6 +332,8 @@ class JobFinderUI:
         tk.Label(
             self.simple_form_body,
             text=text,
+            bg="#ffffff",
+            fg="#111111",
             font=(_font_family(), 13, "bold"),
             anchor="w",
         ).pack(fill=tk.X, pady=(10, 6))
@@ -316,6 +342,8 @@ class JobFinderUI:
         tk.Label(
             self.simple_form_body,
             text=label,
+            bg="#ffffff",
+            fg="#222222",
             font=(_font_family(), 10),
             anchor="w",
         ).pack(fill=tk.X)
@@ -325,6 +353,9 @@ class JobFinderUI:
             font=(_font_family(), 11),
             relief="sunken",
             bd=1,
+            bg="#ffffff",
+            fg="#111111",
+            insertbackground="#111111",
         )
         entry.pack(fill=tk.X, pady=(2, 8), ipady=6)
 
@@ -333,6 +364,11 @@ class JobFinderUI:
             self.simple_form_body,
             text=label,
             variable=var,
+            bg="#ffffff",
+            fg="#111111",
+            activebackground="#ffffff",
+            activeforeground="#111111",
+            selectcolor="#ffffff",
             font=(_font_family(), 10),
             anchor="w",
         ).pack(fill=tk.X, pady=(0, 4))
