@@ -9,8 +9,8 @@
   "include_new_to_you": false,
   "exit_when_done": false,
   "skip_title_contains": "",
-  "delay_between_jobs_min_sec": 30,
-  "delay_between_jobs_max_sec": 90,
+  "delay_between_jobs_min_sec": 10,
+  "delay_between_jobs_max_sec": 20,
   "batch_size": 1,
   "apply_threshold": 140,
   "maybe_threshold": 100,
@@ -31,5 +31,7 @@
   "user_address": "",
   "user_phone": "",
   "user_email": "",
-  "user_name": ""
+  "user_name": "",
+  "resume_style": "ATS-Focused Professional",
+  "cover_letter_style": "Commercial Problem-Solver"
 }

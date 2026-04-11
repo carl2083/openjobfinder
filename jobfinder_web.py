@@ -91,6 +91,112 @@ def ensure_seek(driver: webdriver.Chrome, config: Config) -> str:
     return handle
 
 
+def _normalize_ws(value: str) -> str:
+    return re.sub(r"\s+", " ", (value or "")).strip()
+
+
+def _find_chat_link_by_title(
+    driver: webdriver.Chrome, chat_title: str
+) -> Optional[Any]:
+    expected = _normalize_ws(chat_title)
+    if not expected:
+        return None
+
+    selectors = [
+        "nav a",
+        "a[href*='/c/']",
+        "a[href*='/g/']",
+        "[data-testid*='conversation']",
+    ]
+    seen = set()
+    for selector in selectors:
+        try:
+            elements = driver.find_elements(By.CSS_SELECTOR, selector)
+        except Exception:
+            continue
+        for element in elements:
+            element_id = element.id
+            if element_id in seen:
+                continue
+            seen.add(element_id)
+            text = _normalize_ws(element.text or "")
+            if text == expected or expected in text:
+                return element
+    return None
+
+
+def clear_chatgpt_draft(
+    driver: webdriver.Chrome,
+    config: Config,
+    timeout: int = 30,
+    log: Optional[Callable[[str], None]] = None,
+) -> bool:
+    chatgpt_handle = ensure_chatgpt(driver, config)
+    driver.switch_to.window(chatgpt_handle)
+    wait = WebDriverWait(driver, timeout)
+
+    try:
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+    except Exception:
+        return False
+
+    textarea = wait.until(EC.presence_of_element_located((By.ID, "prompt-textarea")))
+    driver.execute_script(
+        """
+        const el = arguments[0];
+        el.focus();
+        if (el.isContentEditable) {
+            el.textContent = '';
+            el.innerHTML = '';
+        } else {
+            el.value = '';
+        }
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        """,
+        textarea,
+    )
+    time.sleep(0.5)
+
+    try:
+        current_text = textarea.get_attribute("value") or textarea.text or ""
+    except Exception:
+        current_text = ""
+
+    cleared = not current_text.strip()
+    if cleared:
+        _log(log, "已清空 ChatGPT 输入框草稿。")
+    return cleared
+
+
+def clear_chatgpt_draft_via_debugger(
+    config: Config,
+    log: Optional[Callable[[str], None]] = None,
+    attempts: int = 3,
+    delay_sec: int = 3,
+) -> bool:
+    last_error: Optional[Exception] = None
+    for _ in range(attempts):
+        driver: Optional[webdriver.Chrome] = None
+        try:
+            driver = connect_driver(config)
+            if clear_chatgpt_draft(driver, config, log=log):
+                return True
+        except Exception as exc:
+            last_error = exc
+        finally:
+            if driver is not None:
+                try:
+                    driver.quit()
+                except Exception:
+                    pass
+        time.sleep(delay_sec)
+
+    if last_error:
+        _log(log, f"未能清空 ChatGPT 输入框: {last_error}")
+    return False
+
+
 
 
 def collect_job_links(driver: webdriver.Chrome, limit: Optional[int]) -> List[str]:
@@ -643,27 +749,22 @@ def send_prompt(
 
         # 对话名称为空：不点击任何会话，使用当前已打开的对话（适合新开短对话避免变慢）
         chat_title = (config.chatgpt_chat_title or "").strip()
-        chat_links = (
-            driver.find_elements(By.XPATH, f"//a[contains(., '{chat_title}')]")
-            if chat_title
-            else []
-        )
-        if chat_links:
+        chat_link = _find_chat_link_by_title(driver, chat_title) if chat_title else None
+        if chat_link:
             driver.execute_script(
-                "arguments[0].scrollIntoView({block: 'center'});", chat_links[0]
+                "arguments[0].scrollIntoView({block: 'center'});", chat_link
             )
             time.sleep(0.5)
             try:
-                chat_links[0].click()
+                chat_link.click()
             except Exception:
-                driver.execute_script("arguments[0].click();", chat_links[0])
+                driver.execute_script("arguments[0].click();", chat_link)
 
         time.sleep(2)
         _switch_to_instant_mode(driver, log)
         time.sleep(3)
-        textarea = wait.until(
-            EC.presence_of_element_located((By.ID, "prompt-textarea"))
-        )
+        clear_chatgpt_draft(driver, config, timeout=timeout, log=log)
+        textarea = wait.until(EC.presence_of_element_located((By.ID, "prompt-textarea")))
         textarea.click()
         # ChatGPT 编辑器是 contenteditable，直接写入 textContent
         driver.execute_script(
@@ -802,7 +903,7 @@ def _process_single_job(
     _log(log, f"发送 ChatGPT: {job_id} - {title}")
 
     try:
-        prompt = build_prompt(job_description)
+        prompt = build_prompt(job_description, config)
         timeout = 180
         attempts = 0
         while attempts < 2:

@@ -31,3 +31,6 @@ env/
 # 系统
 .DS_Store
 Thumbs.db
+
+# Local brainstorming previews
+.superpowers/

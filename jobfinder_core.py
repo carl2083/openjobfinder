@@ -16,9 +16,23 @@ from openpyxl.worksheet.dimensions import RowDimension
 
 DEFAULT_CONFIG_PATH = "config.json"
 SKILL_PROFILE_PATH = "skill.md"
+PROMPT_TEMPLATE_PATH = "prompt.md"
+SKILL_PROFILE_MARKER = "<!-- GENERATED_SKILL_PROFILE_START -->"
+RESUME_STYLE_OPTIONS = [
+    "ATS-Focused Professional",
+    "Concise Achievement-Led",
+    "Project & Impact Focused",
+]
+DEFAULT_COVER_LETTER_STYLE = "Commercial Problem-Solver"
+COVER_LETTER_STYLE_OPTIONS = [
+    "Commercial Problem-Solver",
+    "Evidence-Led Value Pitch",
+    "Operational Calm & Reliability",
+    "Strategic Career Transition",
+]
 
 
-PROMPT_TEMPLATE = """
+DEFAULT_PROMPT_TEMPLATE = """
 You are evaluating job descriptions for me.
 Please deeply analyse this job posting, the company and its industry. 
 based on your analysis, identify the most important 9 - 12 skills that are most relevant to the role, 
@@ -73,6 +87,16 @@ Resume must have the following format:
     - References: 
     (not strictly follow the format, just use it as a reference)
 And write me a cover letter try answer the questions in JD.
+
+COVER LETTER RULES:
+- The cover letter should ideally fit on a single page.
+- Keep it generally between 250 and 400 words.
+- Structure it into 3 to 6 paragraphs.
+- Focus on the strongest qualifications and fit for this role.
+- Do not repeat the entire resume or restate every bullet point.
+- Use specific, relevant evidence from my background that best supports this application.
+- Keep it sharp, persuasive, and readable in an Australian job-market tone.
+
 For bullet points use x,y,z formula: which is what you accomplished. and how you accomplished it. Then write me a resume and cover letter
 Return STRICT JSON using the provided schema.
 {
@@ -136,6 +160,47 @@ All scores must follow the defined scoring model.
 """
 
 
+DEFAULT_SKILL_PROFILE_TEMPLATE = f"""# Copy This To ChatGPT
+
+Copy the prompt below into ChatGPT together with your resume, work history, project history, or any rough notes about your background.
+Ask ChatGPT to return a clean, truthful skill profile in markdown.
+
+---
+
+Please help me build a truthful master skill profile for job applications.
+
+Rules:
+- Only use experience, roles, projects, education, tools, and skills that I explicitly provide.
+- Do not invent employers, achievements, systems, dates, or seniority.
+- Rewrite my background into a clean markdown profile that is easy for another ChatGPT prompt to reuse later.
+- Group similar experience clearly, but do not fabricate new jobs or fake responsibilities.
+- Include:
+  - Core Professional Background
+  - Education
+  - Business / Commercial Experience
+  - Software / Technical Projects
+  - Data / Analytics / Automation Skills
+  - AI / Tooling
+  - Technical Mindset & Strengths
+  - Communication & Work Style
+  - Explicit Exclusions
+  - Positioning Guidance
+
+Output requirements:
+- Use markdown headings and bullet points.
+- Keep it factual and reusable.
+- Make it strong, but never exaggerated.
+- This document will later be used as the source of truth for resume and cover-letter generation.
+
+---
+
+Paste the final generated profile below this marker:
+
+{SKILL_PROFILE_MARKER}
+
+"""
+
+
 SHEET_HEADERS = [
     "Job ID",
     "Job Title",
@@ -182,8 +247,8 @@ class Config:
     include_new_to_you: bool = False
     exit_when_done: bool = False
     skip_title_contains: str = ""
-    delay_between_jobs_min_sec: int = 30
-    delay_between_jobs_max_sec: int = 90
+    delay_between_jobs_min_sec: int = 10
+    delay_between_jobs_max_sec: int = 20
     batch_size: int = 1
     apply_threshold: int = 140
     maybe_threshold: int = 100
@@ -205,6 +270,8 @@ class Config:
     user_phone: str = ""
     user_email: str = ""
     user_name: str = "carl chen"
+    resume_style: str = "ATS-Focused Professional"
+    cover_letter_style: str = DEFAULT_COVER_LETTER_STYLE
 
 
 def load_config(path: str) -> Config:
@@ -290,16 +357,52 @@ def format_list(value: Any) -> str:
     return str(value) if value is not None else ""
 
 
+def ensure_prompt_template_file(path: str = PROMPT_TEMPLATE_PATH) -> str:
+    if not os.path.exists(path):
+        Path(path).write_text(DEFAULT_PROMPT_TEMPLATE.strip() + "\n", encoding="utf-8")
+    return path
+
+
+def ensure_skill_profile_file(path: str = SKILL_PROFILE_PATH) -> str:
+    if not os.path.exists(path):
+        Path(path).write_text(DEFAULT_SKILL_PROFILE_TEMPLATE, encoding="utf-8")
+    return path
+
+
 def load_skill_profile(path: str = SKILL_PROFILE_PATH) -> str:
     if not os.path.exists(path):
         return ""
     try:
-        return Path(path).read_text(encoding="utf-8").strip()
+        text = Path(path).read_text(encoding="utf-8").strip()
     except Exception:
         return ""
+    if SKILL_PROFILE_MARKER in text:
+        text = text.split(SKILL_PROFILE_MARKER, 1)[1].strip()
+    return text
 
 
-def build_prompt(job_description: str) -> str:
+def load_prompt_template(path: str = PROMPT_TEMPLATE_PATH) -> str:
+    if not os.path.exists(path):
+        return DEFAULT_PROMPT_TEMPLATE.strip()
+    try:
+        text = Path(path).read_text(encoding="utf-8").strip()
+    except Exception:
+        return DEFAULT_PROMPT_TEMPLATE.strip()
+    return text or DEFAULT_PROMPT_TEMPLATE.strip()
+
+
+def _writing_style_block(config: Config) -> str:
+    return """
+WRITING STYLE PREFERENCES:
+- Resume style: {resume_style}
+- Cover letter style: {cover_letter_style}
+
+Use the selected styles as tone and structure guidance while keeping everything truthful and tailored to the JD.
+""".strip()
+
+
+def build_prompt(job_description: str, config: Config) -> str:
+    prompt_template = load_prompt_template()
     skill_profile = load_skill_profile()
     skill_block = ""
     if skill_profile:
@@ -307,7 +410,18 @@ def build_prompt(job_description: str) -> str:
             "SKILL PROFILE (source of truth; do not fabricate beyond this):\n"
             f"{skill_profile}\n\n"
         )
-    return f"{PROMPT_TEMPLATE}\n\n{skill_block}JOB DESCRIPTION:\n{job_description}"
+    style_block = _writing_style_block(config).format(
+        resume_style=getattr(config, "resume_style", "ATS-Focused Professional"),
+        cover_letter_style=getattr(
+            config, "cover_letter_style", DEFAULT_COVER_LETTER_STYLE
+        ),
+    )
+    sections = [prompt_template.strip()]
+    sections.append(style_block)
+    if skill_block:
+        sections.append(skill_block.rstrip())
+    sections.append(f"JOB DESCRIPTION:\n{job_description}")
+    return "\n\n".join(section for section in sections if section)
 
 
 def extract_json_from_text(text: str) -> Dict[str, Any]:
@@ -440,30 +554,8 @@ def append_skipped_job_to_excel(
     for k in ["nature_of_work", "structure_vs_chaos", "learning_value",
               "energy_drain", "exit_value"]:
         payload["interest"][k] = 0
-    # build_row needs suitability/interest totals - use 0
-    payload["suitability_total"] = 0
-    payload["interest_total"] = 0
-    payload["final_score"] = 0
-    # build_row expects standard structure; pass minimal
-    fake_payload = {
-        "job_meta": payload["job_meta"],
-        "suitability": payload["suitability"],
-        "interest": payload["interest"],
-        "notes": payload["notes"],
-        "other": payload["other"],
-    }
-    skip_note = f"跳过: 标题包含 {skip_reason}"
-    row = [
-        job_id,
-        job_meta.get("job_title", ""),
-        job_meta.get("company", ""),
-        job_meta.get("location", ""),
-        job_meta.get("job_url", ""),
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        "SKIP",
-        config.default_confidence,
-        "", "", "", "", "", skip_note, "", "", "",
-    ]
+    row = build_row(payload, config)
+    row[26] = f"跳过: 标题包含 {skip_reason}"
     wb = ensure_workbook(config.output_excel)
     ws = wb.active
     ws.append(row)
