@@ -168,60 +168,185 @@ class JobFinderUI:
         self.show_section("basic")
 
     def _build_simple_ui(self) -> None:
-        self.root.grid_columnconfigure(0, weight=1)
-        self.root.grid_rowconfigure(0, weight=1)
+        self.root.configure(bg="#f0f0f0")
+        outer = tk.Frame(self.root, padx=12, pady=12)
+        outer.pack(fill=tk.BOTH, expand=True)
 
-        shell = tk.Frame(self.root, bg=SURFACE_BG, padx=18, pady=18)
-        shell.grid(row=0, column=0, sticky="nsew")
-        shell.grid_columnconfigure(0, weight=1)
-
-        header = self._create_card(shell)
-        header.pack(fill=tk.X, pady=(0, 14))
+        header = tk.Frame(outer)
+        header.pack(fill=tk.X, pady=(0, 10))
         tk.Label(
             header,
             text="JobFinder",
-            bg=CARD_BG,
-            fg=TEXT_PRIMARY,
-            font=(_font_family("display"), 22, "bold"),
+            font=(_font_family("display"), 20, "bold"),
         ).pack(anchor="w")
         tk.Label(
             header,
-            text="Simplified macOS layout. Fill the fields, launch Debug Chrome, log in, then continue running.",
-            bg=CARD_BG,
-            fg=TEXT_MUTED,
+            text="macOS simplified mode: launch Debug Chrome, log in to Seek and ChatGPT, then continue.",
             font=(_font_family(), 11),
             justify="left",
             wraplength=900,
-        ).pack(anchor="w", pady=(8, 0))
+        ).pack(anchor="w", pady=(4, 0))
         tk.Label(
             header,
             textvariable=self.summary_var,
-            bg=CARD_BG,
-            fg=TEXT_MUTED,
             font=(_font_family(), 10),
             justify="left",
             wraplength=900,
-        ).pack(anchor="w", pady=(10, 0))
+        ).pack(anchor="w", pady=(4, 0))
 
-        self._build_actions(shell)
+        actions = tk.Frame(outer)
+        actions.pack(fill=tk.X, pady=(0, 10))
+        tk.Button(
+            actions,
+            textvariable=self.run_action_var,
+            command=self._on_run_action,
+            font=(_font_family(), 11, "bold"),
+            padx=12,
+            pady=8,
+        ).pack(side=tk.LEFT, padx=(0, 8))
+        tk.Button(
+            actions,
+            text="编辑 skill.md",
+            command=self.edit_skill_file,
+            font=(_font_family(), 10),
+        ).pack(side=tk.LEFT, padx=(0, 8))
+        tk.Button(
+            actions,
+            text="编辑 prompt",
+            command=self.edit_prompt_file,
+            font=(_font_family(), 10),
+        ).pack(side=tk.LEFT, padx=(0, 8))
+        tk.Button(
+            actions,
+            text="保存配置",
+            command=self.save,
+            font=(_font_family(), 10),
+        ).pack(side=tk.LEFT)
 
-        basic = tk.Frame(shell, bg=SURFACE_BG)
-        basic.pack(fill=tk.X, pady=(0, 12))
-        self._build_basic_section(basic)
+        notebook = ttk.Notebook(outer)
+        notebook.pack(fill=tk.BOTH, expand=True)
 
-        advanced = tk.Frame(shell, bg=SURFACE_BG)
-        advanced.pack(fill=tk.X, pady=(0, 12))
-        self._build_advanced_section(advanced)
+        tab_basic = ttk.Frame(notebook)
+        tab_advanced = ttk.Frame(notebook)
+        tab_personal = ttk.Frame(notebook)
+        tab_runlog = ttk.Frame(notebook)
+        notebook.add(tab_basic, text="Basic")
+        notebook.add(tab_advanced, text="Advanced")
+        notebook.add(tab_personal, text="Personal")
+        notebook.add(tab_runlog, text="Run Log")
 
-        personal = tk.Frame(shell, bg=SURFACE_BG)
-        personal.pack(fill=tk.X, pady=(0, 12))
-        self._build_personal_section(personal)
+        self._build_simple_form(tab_basic, [
+            ("职位地点", self.job_location),
+            ("关键词", self.keyword),
+            ("运行次数 / JD URL", self.max_runs),
+        ])
 
-        runlog = tk.Frame(shell, bg=SURFACE_BG)
-        runlog.pack(fill=tk.X, pady=(0, 12))
-        self._build_runlog_section(runlog)
+        self._build_simple_advanced(tab_advanced)
+        self._build_simple_form(tab_personal, [
+            ("姓名 (Header)", self.user_name),
+            ("电话 (Header)", self.user_phone),
+            ("Email (Header)", self.user_email),
+            ("地址 (Header)", self.user_address),
+        ])
 
-        self._build_log_card(shell)
+        checklist = tk.Frame(tab_runlog, padx=12, pady=12)
+        checklist.pack(fill=tk.X)
+        for line in [
+            "1. 先点击主按钮启动 Debug Chrome。",
+            "2. 在打开的 Chrome 里登录 Seek 和 ChatGPT。",
+            "3. 确认 ChatGPT 输入框可以正常输入。",
+            "4. 回到程序，再点一次主按钮继续运行。",
+        ]:
+            tk.Label(
+                checklist,
+                text=line,
+                font=(_font_family(), 10),
+                justify="left",
+                anchor="w",
+            ).pack(anchor="w", pady=2)
+        tk.Label(
+            checklist,
+            textvariable=self.status_var,
+            font=(_font_family(), 14, "bold"),
+        ).pack(anchor="w", pady=(10, 2))
+
+        log_wrap = tk.Frame(outer)
+        log_wrap.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
+        tk.Label(log_wrap, text="Run Log", font=(_font_family(), 12, "bold")).pack(anchor="w")
+        self.log = tk.Text(
+            log_wrap,
+            height=14,
+            font=("Menlo", 10),
+            padx=8,
+            pady=8,
+        )
+        self.log.pack(fill=tk.BOTH, expand=True)
+
+    def _build_simple_form(self, parent: tk.Widget, fields) -> None:
+        frame = tk.Frame(parent, padx=12, pady=12)
+        frame.pack(fill=tk.BOTH, expand=True)
+        for idx, (label, var) in enumerate(fields):
+            tk.Label(frame, text=label, font=(_font_family(), 10)).grid(
+                row=idx * 2, column=0, sticky="w", pady=(0, 4)
+            )
+            entry = tk.Entry(frame, textvariable=var, font=(_font_family(), 11))
+            entry.grid(row=idx * 2 + 1, column=0, sticky="ew", pady=(0, 10))
+        frame.grid_columnconfigure(0, weight=1)
+
+    def _build_simple_advanced(self, parent: tk.Widget) -> None:
+        frame = tk.Frame(parent, padx=12, pady=12)
+        frame.pack(fill=tk.BOTH, expand=True)
+        advanced_fields = [
+            ("Chrome Debug 端口", self.chrome_port),
+            ("Chrome 用户目录", self.chrome_user_data_dir),
+            ("Chrome 路径", self.chrome_path),
+            ("ChatGPT URL", self.chatgpt_url),
+            ("ChatGPT 对话名称", self.chatgpt_chat_title),
+            ("搜索地址 (Seek URL)", self.seek_url),
+            ("Excel 输出文件", self.output_excel),
+            ("同步文件路径", self.local_sync_path),
+            ("跳过标题包含", self.skip_title_contains),
+            ("任务间隔秒数 (最小)", self.delay_min),
+            ("任务间隔秒数 (最大)", self.delay_max),
+        ]
+        row = 0
+        for label, var in advanced_fields:
+            tk.Label(frame, text=label, font=(_font_family(), 10)).grid(
+                row=row, column=0, sticky="w", pady=(0, 4)
+            )
+            entry = tk.Entry(frame, textvariable=var, font=(_font_family(), 11))
+            entry.grid(row=row + 1, column=0, sticky="ew", pady=(0, 10))
+            row += 2
+
+        tk.Label(frame, text="Resume Style", font=(_font_family(), 10)).grid(
+            row=row, column=0, sticky="w", pady=(0, 4)
+        )
+        tk.OptionMenu(frame, self.resume_style, *RESUME_STYLE_OPTIONS).grid(
+            row=row + 1, column=0, sticky="ew", pady=(0, 10)
+        )
+        row += 2
+        tk.Label(frame, text="Cover Letter Style", font=(_font_family(), 10)).grid(
+            row=row, column=0, sticky="w", pady=(0, 4)
+        )
+        tk.OptionMenu(
+            frame, self.cover_letter_style, *COVER_LETTER_STYLE_OPTIONS
+        ).grid(row=row + 1, column=0, sticky="ew", pady=(0, 10))
+        row += 2
+
+        for label, var in [
+            ("优先处理推荐页", self.include_recommendations),
+            ("优先处理 New to you", self.include_new_to_you),
+            ("完成之后退出程序", self.exit_when_done),
+            ("本地盘符同步(不上传)", self.enable_local_sync),
+            ("运行前从同步路径读取", self.local_sync_pull_before_run),
+            ("导出简历/求职信 PDF", self.enable_pdf_export),
+        ]:
+            tk.Checkbutton(frame, text=label, variable=var, font=(_font_family(), 10)).grid(
+                row=row, column=0, sticky="w", pady=(0, 6)
+            )
+            row += 1
+
+        frame.grid_columnconfigure(0, weight=1)
 
     def _build_sidebar(self, parent: tk.Frame) -> None:
         top = tk.Frame(parent, bg=SIDEBAR_BG, padx=18, pady=20)
