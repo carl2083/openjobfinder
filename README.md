@@ -7,6 +7,7 @@ JobFinder is a desktop tool that helps you review Seek jobs, send job descriptio
 ### macOS
 
 ```bash
+cd ~
 git clone https://github.com/carl2083/openjobfinder
 cd openjobfinder
 python3 -m venv venv
@@ -28,6 +29,7 @@ Then:
 ### Windows
 
 ```bash
+cd %USERPROFILE%
 git clone https://github.com/carl2083/openjobfinder
 cd openjobfinder
 python -m venv venv
@@ -54,6 +56,7 @@ Then:
 - `Edit skill.md` creates a default template for new users, including a "Copy this to ChatGPT" prompt for building a reusable skills profile.
 - `Edit prompt` opens the main JD / resume / cover-letter prompt template.
 - In `Advanced`, you can choose both `Resume Style` and `Cover Letter Style`.
+- Cover letter generation stays on by default, and PDF export is enabled by default for new configs.
 - Cover letters are guided to stay close to one page, usually 250-400 words, across 3-6 paragraphs, focused on key qualifications instead of repeating the full resume.
 - Output goes to `job_results.xlsx` by default, plus `pdf_output/<job_id>/` when PDF export is enabled.
 - If Chrome is installed in a non-standard location, set `chrome_path` manually.

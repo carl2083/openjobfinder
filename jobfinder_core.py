@@ -241,7 +241,7 @@ HIDDEN_EXCEL_COLUMNS = [chr(code) for code in range(ord("F"), ord("X") + 1)] + [
 class Config:
     output_excel: str = "job_results.xlsx"
     job_location: str = "All Gold Coast QLD"
-    keyword: Optional[str] = None
+    keyword: Optional[str] = "accountant"
     gpt_mode: str = "web_chatgpt"
     max_runs: Optional[int] = 20
     single_job_url: Optional[str] = None
@@ -264,7 +264,7 @@ class Config:
     enable_local_sync: bool = False
     local_sync_path: str = ""
     local_sync_pull_before_run: bool = True
-    enable_pdf_export: bool = False
+    enable_pdf_export: bool = True
     pdf_css_path: str = ""
     pdf_output_dir: str = "pdf_output"
     pdf_template_path: str = "templates/navy-gold-template.html"

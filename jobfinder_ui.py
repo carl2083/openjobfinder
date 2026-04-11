@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QTabWidget,
     QTextEdit,
     QVBoxLayout,
@@ -51,6 +52,7 @@ class UiSignals(QObject):
     run_button_text = Signal(str)
     run_button_enabled = Signal(bool)
     chrome_ready = Signal(bool)
+    open_outputs = Signal()
 
 
 class JobFinderWindow(QMainWindow):
@@ -72,6 +74,7 @@ class JobFinderWindow(QMainWindow):
         self.signals.run_button_text.connect(self.run_action_button.setText)
         self.signals.run_button_enabled.connect(self.run_action_button.setEnabled)
         self.signals.chrome_ready.connect(self._set_chrome_ready)
+        self.signals.open_outputs.connect(self.open_generated_outputs)
         self._load_config_into_form()
         self.signals.status.emit("Idle")
         self.signals.summary.emit("Ready to launch a fresh session.")
@@ -223,11 +226,18 @@ class JobFinderWindow(QMainWindow):
 
     def _build_tabs(self) -> QWidget:
         self.tabs = QTabWidget()
-        self.tabs.addTab(self._build_basic_tab(), "Basic")
-        self.tabs.addTab(self._build_advanced_tab(), "Advanced")
-        self.tabs.addTab(self._build_personal_tab(), "Personal")
-        self.tabs.addTab(self._build_notes_tab(), "Run Notes")
+        self.tabs.addTab(self._wrap_scroll(self._build_basic_tab()), "Basic")
+        self.tabs.addTab(self._wrap_scroll(self._build_advanced_tab()), "Advanced")
+        self.tabs.addTab(self._wrap_scroll(self._build_personal_tab()), "Personal")
+        self.tabs.addTab(self._wrap_scroll(self._build_notes_tab()), "Run Notes")
         return self.tabs
+
+    def _wrap_scroll(self, widget: QWidget) -> QWidget:
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setWidget(widget)
+        return scroll
 
     def _build_basic_tab(self) -> QWidget:
         widget = QWidget()
@@ -246,9 +256,9 @@ class JobFinderWindow(QMainWindow):
     def _build_advanced_tab(self) -> QWidget:
         widget = QWidget()
         outer = QVBoxLayout(widget)
+        outer.setSpacing(14)
 
-        top = QHBoxLayout()
-        top.addWidget(
+        outer.addWidget(
             self._group_with_form(
                 "Writing Style & Run Behavior",
                 [
@@ -263,10 +273,9 @@ class JobFinderWindow(QMainWindow):
                     ("Include New To You", self._check("include_new_to_you")),
                     ("Exit When Done", self._check("exit_when_done")),
                 ],
-            ),
-            1,
+            )
         )
-        top.addWidget(
+        outer.addWidget(
             self._group_with_form(
                 "Chrome & ChatGPT",
                 [
@@ -277,10 +286,8 @@ class JobFinderWindow(QMainWindow):
                     ("ChatGPT Chat Title", self._line("chatgpt_chat_title")),
                     ("Seek URL", self._line("seek_url")),
                 ],
-            ),
-            1,
+            )
         )
-        outer.addLayout(top)
 
         outer.addWidget(
             self._group_with_form(
@@ -352,6 +359,7 @@ class JobFinderWindow(QMainWindow):
     def _group_with_form(self, title: str, rows, checkboxes=None) -> QWidget:
         group = QGroupBox(title)
         layout = QVBoxLayout(group)
+        group.setMinimumHeight(220)
 
         form = QFormLayout()
         form.setLabelAlignment(Qt.AlignLeft)
@@ -370,7 +378,8 @@ class JobFinderWindow(QMainWindow):
 
     def _line(self, name: str) -> QLineEdit:
         widget = QLineEdit()
-        widget.setMinimumWidth(320)
+        widget.setMinimumWidth(420)
+        widget.setMinimumHeight(40)
         setattr(self, name, widget)
         return widget
 
@@ -378,7 +387,8 @@ class JobFinderWindow(QMainWindow):
         combo = QComboBox()
         combo.addItems(list(values))
         combo.setEditable(False)
-        combo.setMinimumWidth(320)
+        combo.setMinimumWidth(420)
+        combo.setMinimumHeight(40)
         setattr(self, name, combo)
         return combo
 
@@ -399,9 +409,11 @@ class JobFinderWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
         edit = QLineEdit()
-        edit.setMinimumWidth(320)
+        edit.setMinimumWidth(420)
+        edit.setMinimumHeight(40)
         setattr(self, name, edit)
         button = QPushButton("Browse")
+        button.setMinimumHeight(40)
         button.clicked.connect(
             lambda: self._select_path(edit, directory=directory, file_mode=file_mode, save_mode=save_mode)
         )
@@ -689,6 +701,7 @@ class JobFinderWindow(QMainWindow):
                 )
                 self.log_message("Completed.")
                 self.signals.status.emit("Completed")
+                self.signals.open_outputs.emit()
                 self.signals.run_button_enabled.emit(True)
                 self.signals.run_button_text.emit("Launch Another Run")
                 self.signals.chrome_ready.emit(False)
@@ -746,6 +759,21 @@ class JobFinderWindow(QMainWindow):
         target_dir = output_path.parent if output_path.parent != Path("") else Path.cwd()
         target_dir.mkdir(parents=True, exist_ok=True)
         self._open_path(target_dir)
+
+    def open_generated_outputs(self) -> None:
+        config = self.config
+        output_path = Path(config.output_excel).expanduser()
+        if not output_path.is_absolute():
+            output_path = Path.cwd() / output_path
+        if output_path.exists():
+            self._open_path(output_path)
+
+        if config.enable_pdf_export:
+            pdf_dir = Path(config.pdf_output_dir).expanduser()
+            if not pdf_dir.is_absolute():
+                pdf_dir = Path.cwd() / pdf_dir
+            if pdf_dir.exists():
+                self._open_path(pdf_dir)
 
     def _open_path(self, path: Path) -> None:
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))

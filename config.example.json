@@ -1,7 +1,7 @@
 {
   "output_excel": "job_results.xlsx",
   "job_location": "All Gold Coast QLD",
-  "keyword": null,
+  "keyword": "accountant",
   "gpt_mode": "web_chatgpt",
   "max_runs": 20,
   "single_job_url": null,
@@ -24,7 +24,7 @@
   "enable_local_sync": false,
   "local_sync_path": "",
   "local_sync_pull_before_run": true,
-  "enable_pdf_export": false,
+  "enable_pdf_export": true,
   "pdf_css_path": "",
   "pdf_output_dir": "pdf_output",
   "pdf_template_path": "templates/navy-gold-template.html",
