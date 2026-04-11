@@ -7,8 +7,8 @@ JobFinder is a desktop tool that helps you review Seek jobs, send job descriptio
 ### Windows
 
 ```bash
-git clone <repository-url>
-cd JobFinder
+git clone https://github.com/carl2083/openjobfinder
+cd OpenJobFinder
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
@@ -28,8 +28,8 @@ Then:
 ### macOS
 
 ```bash
-git clone <repository-url>
-cd JobFinder
+git clone https://github.com/carl2083/openjobfinder
+cd OpenJobFinder
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -48,6 +48,8 @@ Then:
 
 ## 2. Other Info
 
+- Python 3.8+ is required.
+- Upgrading `pip` first is recommended if dependency installation fails, but it is not required before setup.
 - `编辑 skill.md` creates a default template for new users, including a “Copy this to ChatGPT” prompt for building a reusable skills profile.
 - `编辑 prompt` opens the main JD / resume / cover-letter prompt template.
 - In `Advanced`, you can choose both `Resume Style` and `Cover Letter Style`.
