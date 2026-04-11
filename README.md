@@ -4,27 +4,6 @@ JobFinder is a desktop tool that helps you review Seek jobs, send job descriptio
 
 ## 1. Run It
 
-### Windows
-
-```bash
-git clone https://github.com/carl2083/openjobfinder
-cd openjobfinder
-python -m venv venv
-venv\Scripts\activate
-python -m pip install --upgrade pip setuptools wheel
-pip install -r requirements.txt
-copy config.example.json config.json
-python jobfinder_ui.py
-```
-
-Then:
-
-- Fill `Basic Setup`: location, keyword, run count or a single JD URL.
-- Fill `Advanced` only if you need to override paths or URLs.
-- Click the main button once to launch Debug Chrome.
-- Log in to Seek and ChatGPT in that browser.
-- Click the same button again to continue the run.
-
 ### macOS
 
 ```bash
@@ -36,6 +15,27 @@ python3 -m pip install --upgrade pip setuptools wheel
 pip install --no-compile -r requirements.txt
 cp config.example.json config.json
 python3 jobfinder_ui.py
+```
+
+Then:
+
+- Fill `Basic Setup`: location, keyword, run count or a single JD URL.
+- Fill `Advanced` only if you need to override paths or URLs.
+- Click the main button once to launch Debug Chrome.
+- Log in to Seek and ChatGPT in that browser.
+- Click the same button again to continue the run.
+
+### Windows
+
+```bash
+git clone https://github.com/carl2083/openjobfinder
+cd openjobfinder
+python -m venv venv
+venv\Scripts\activate
+python -m pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
+copy config.example.json config.json
+python jobfinder_ui.py
 ```
 
 Then:

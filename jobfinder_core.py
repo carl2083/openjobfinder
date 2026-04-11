@@ -234,6 +234,8 @@ SHEET_HEADERS = [
     "PDF Folder Link",
 ]
 
+HIDDEN_EXCEL_COLUMNS = [chr(code) for code in range(ord("F"), ord("X") + 1)] + ["AB", "AC"]
+
 
 @dataclass
 class Config:
@@ -491,7 +493,9 @@ def build_row(payload: Dict[str, Any], config: Config) -> List[Any]:
 def ensure_workbook(path: str) -> Workbook:
     if os.path.exists(path):
         try:
-            return load_workbook(path)
+            wb = load_workbook(path)
+            apply_excel_view(wb.active)
+            return wb
         except (BadZipFile, InvalidFileException):
             # 备份损坏文件，避免覆盖并保留现场
             ts = datetime.utcnow().strftime("%Y%m%d%H%M%S")
@@ -501,8 +505,14 @@ def ensure_workbook(path: str) -> Workbook:
     ws = wb.active
     ws.title = "Jobs"
     ws.append(SHEET_HEADERS)
+    apply_excel_view(ws)
     wb.save(path)
     return wb
+
+
+def apply_excel_view(ws) -> None:
+    for col in HIDDEN_EXCEL_COLUMNS:
+        ws.column_dimensions[col].hidden = True
 
 
 def _parse_skip_title_strings(s: str) -> List[str]:
@@ -559,6 +569,7 @@ def append_skipped_job_to_excel(
     wb = ensure_workbook(config.output_excel)
     ws = wb.active
     ws.append(row)
+    apply_excel_view(ws)
     row_num = ws.max_row
     dim = RowDimension(ws, index=row_num, hidden=True)
     ws.row_dimensions[row_num] = dim
@@ -575,6 +586,7 @@ def append_row_to_excel(config: Config, payload: Dict[str, Any]) -> str:
     ws = wb.active
     row = build_row(payload, config)
     ws.append(row)
+    apply_excel_view(ws)
     # 将 Job URL 设置为可点击的超链接
     url_cell = ws.cell(row=ws.max_row, column=5)
     if url_cell.value:

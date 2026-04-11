@@ -208,12 +208,16 @@ class JobFinderWindow(QMainWindow):
         self.edit_prompt_button = QPushButton("Edit prompt")
         self.edit_prompt_button.clicked.connect(self.edit_prompt_file)
 
+        self.open_output_button = QPushButton("Open Output Folder")
+        self.open_output_button.clicked.connect(self.open_output_folder)
+
         self.save_button = QPushButton("Save Config")
         self.save_button.clicked.connect(self.save)
 
         layout.addWidget(self.run_action_button, 2)
         layout.addWidget(self.edit_skill_button)
         layout.addWidget(self.edit_prompt_button)
+        layout.addWidget(self.open_output_button)
         layout.addWidget(self.save_button)
         return layout
 
@@ -732,6 +736,16 @@ class JobFinderWindow(QMainWindow):
     def edit_prompt_file(self) -> None:
         path = Path(ensure_prompt_template_file(str(Path.cwd() / "prompt.md")))
         self._open_path(path)
+
+    def open_output_folder(self) -> None:
+        config = self._read_config()
+        output_path = Path(config.output_excel).expanduser()
+        if not output_path.is_absolute():
+            output_path = Path.cwd() / output_path
+
+        target_dir = output_path.parent if output_path.parent != Path("") else Path.cwd()
+        target_dir.mkdir(parents=True, exist_ok=True)
+        self._open_path(target_dir)
 
     def _open_path(self, path: Path) -> None:
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
