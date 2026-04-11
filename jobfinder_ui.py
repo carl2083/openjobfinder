@@ -30,7 +30,7 @@ BORDER = "#d7dce5"
 ACCENT = "#0f172a"
 ACCENT_SOFT = "#dbe7ff"
 ACCENT_TEXT = "#163152"
-MACOS_SAFE_MODE_VERSION = "macOS Safe Mode v4"
+MACOS_SAFE_MODE_VERSION = "macOS Safe Mode v5"
 
 
 def _font_family(kind: str = "body") -> str:
@@ -144,9 +144,154 @@ class JobFinderUI:
 
     def _build_ui(self) -> None:
         if self.simple_mode:
-            self._build_simple_ui()
+            self._build_macos_safe_v5_ui()
             return
         self._build_full_ui()
+
+    def _build_macos_safe_v5_ui(self) -> None:
+        self.root.configure(bg="#ececec")
+        self.root.geometry("980x900")
+        self.root.minsize(860, 780)
+
+        container = tk.Frame(self.root, bg="#ececec", padx=12, pady=12)
+        container.pack(fill=tk.BOTH, expand=True)
+
+        header = tk.Frame(container, bg="#ececec")
+        header.pack(fill=tk.X, pady=(0, 10))
+        tk.Label(
+            header,
+            text=f"JobFinder ({MACOS_SAFE_MODE_VERSION})",
+            bg="#ececec",
+            fg="#111111",
+            font=(_font_family("display"), 22, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            header,
+            text="Dedicated macOS UI rebuild. Plain Tk widgets only.",
+            bg="#ececec",
+            fg="#222222",
+            font=(_font_family(), 11),
+        ).pack(anchor="w", pady=(4, 0))
+        tk.Label(
+            header,
+            textvariable=self.summary_var,
+            bg="#ececec",
+            fg="#333333",
+            font=(_font_family(), 10),
+            wraplength=920,
+            justify="left",
+        ).pack(anchor="w", pady=(4, 0))
+
+        actions = tk.Frame(container, bg="#ececec")
+        actions.pack(fill=tk.X, pady=(0, 10))
+        tk.Button(actions, textvariable=self.run_action_var, command=self._on_run_action).pack(
+            side=tk.LEFT, padx=(0, 8)
+        )
+        tk.Button(actions, text="Edit skill.md", command=self.edit_skill_file).pack(
+            side=tk.LEFT, padx=(0, 8)
+        )
+        tk.Button(actions, text="Edit prompt", command=self.edit_prompt_file).pack(
+            side=tk.LEFT, padx=(0, 8)
+        )
+        tk.Button(actions, text="Save Config", command=self.save).pack(side=tk.LEFT)
+
+        basic = tk.LabelFrame(container, text="Basic Setup", padx=10, pady=10)
+        basic.pack(fill=tk.X, pady=(0, 10))
+        self._macos_grid_entry_row(basic, 0, "Job Location", self.job_location)
+        self._macos_grid_entry_row(basic, 1, "Keyword", self.keyword)
+        self._macos_grid_entry_row(basic, 2, "Run Count / JD URL", self.max_runs)
+
+        advanced = tk.LabelFrame(container, text="Advanced", padx=10, pady=10)
+        advanced.pack(fill=tk.X, pady=(0, 10))
+        self._macos_grid_entry_row(advanced, 0, "Chrome Debug Port", self.chrome_port)
+        self._macos_grid_entry_row(
+            advanced, 1, "Chrome User Data Dir", self.chrome_user_data_dir
+        )
+        self._macos_grid_entry_row(advanced, 2, "Chrome Path", self.chrome_path)
+        self._macos_grid_entry_row(advanced, 3, "ChatGPT URL", self.chatgpt_url)
+        self._macos_grid_entry_row(
+            advanced, 4, "ChatGPT Chat Title", self.chatgpt_chat_title
+        )
+        self._macos_grid_entry_row(advanced, 5, "Seek URL", self.seek_url)
+        self._macos_grid_entry_row(advanced, 6, "Excel Output File", self.output_excel)
+        self._macos_grid_entry_row(advanced, 7, "Local Sync Path", self.local_sync_path)
+        self._macos_grid_entry_row(
+            advanced, 8, "Skip Title Contains", self.skip_title_contains
+        )
+        self._macos_grid_entry_row(advanced, 9, "Delay Min Seconds", self.delay_min)
+        self._macos_grid_entry_row(advanced, 10, "Delay Max Seconds", self.delay_max)
+        self._macos_grid_entry_row(advanced, 11, "Resume Style", self.resume_style)
+        self._macos_grid_entry_row(
+            advanced, 12, "Cover Letter Style", self.cover_letter_style
+        )
+        advanced.grid_columnconfigure(1, weight=1)
+
+        flags = tk.LabelFrame(container, text="Options", padx=10, pady=10)
+        flags.pack(fill=tk.X, pady=(0, 10))
+        for row, (label, var) in enumerate(
+            [
+                ("Include Recommendations", self.include_recommendations),
+                ("Include New to You", self.include_new_to_you),
+                ("Exit When Done", self.exit_when_done),
+                ("Enable Local Sync", self.enable_local_sync),
+                ("Pull From Sync Path Before Run", self.local_sync_pull_before_run),
+                ("Enable PDF Export", self.enable_pdf_export),
+            ]
+        ):
+            tk.Checkbutton(flags, text=label, variable=var).grid(
+                row=row, column=0, sticky="w", pady=2
+            )
+
+        personal = tk.LabelFrame(container, text="Personal Info", padx=10, pady=10)
+        personal.pack(fill=tk.X, pady=(0, 10))
+        self._macos_grid_entry_row(personal, 0, "Name", self.user_name)
+        self._macos_grid_entry_row(personal, 1, "Phone", self.user_phone)
+        self._macos_grid_entry_row(personal, 2, "Email", self.user_email)
+        self._macos_grid_entry_row(personal, 3, "Address", self.user_address)
+        personal.grid_columnconfigure(1, weight=1)
+
+        notes = tk.LabelFrame(container, text="Run Notes", padx=10, pady=10)
+        notes.pack(fill=tk.X, pady=(0, 10))
+        for line in [
+            "1. Click the main button to launch Debug Chrome.",
+            "2. Log in to Seek and ChatGPT in the opened browser.",
+            "3. Confirm ChatGPT can accept input.",
+            "4. Return to JobFinder and click the main button again.",
+        ]:
+            tk.Label(notes, text=line, anchor="w", justify="left").pack(fill=tk.X)
+        tk.Label(notes, textvariable=self.status_var, font=(_font_family(), 13, "bold")).pack(
+            anchor="w", pady=(8, 0)
+        )
+
+        log_wrap = tk.LabelFrame(container, text="Run Log", padx=10, pady=10)
+        log_wrap.pack(fill=tk.BOTH, expand=True)
+        self.log = tk.Text(
+            log_wrap,
+            height=12,
+            bg="#ffffff",
+            fg="#111111",
+            insertbackground="#111111",
+            relief="sunken",
+            bd=1,
+            font=("Menlo", 10),
+        )
+        self.log.pack(fill=tk.BOTH, expand=True)
+
+    def _macos_grid_entry_row(
+        self, parent: tk.Widget, row: int, label: str, var: tk.StringVar
+    ) -> None:
+        tk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=4, padx=(0, 8))
+        entry = tk.Entry(
+            parent,
+            textvariable=var,
+            bg="#ffffff",
+            fg="#111111",
+            insertbackground="#111111",
+            relief="sunken",
+            bd=1,
+            font=(_font_family(), 11),
+        )
+        entry.grid(row=row, column=1, sticky="ew", pady=4)
 
     def _build_full_ui(self) -> None:
         self.root.grid_columnconfigure(0, weight=0)
