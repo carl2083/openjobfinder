@@ -168,34 +168,42 @@ class JobFinderUI:
         self.show_section("basic")
 
     def _build_simple_ui(self) -> None:
-        self.root.configure(bg="#f0f0f0")
-        outer = tk.Frame(self.root, padx=12, pady=12)
-        outer.pack(fill=tk.BOTH, expand=True)
+        self.root.configure(bg="#f4f4f4")
+        self.root.geometry("900x860")
+        self.root.minsize(760, 720)
 
-        header = tk.Frame(outer)
-        header.pack(fill=tk.X, pady=(0, 10))
+        shell = tk.Frame(self.root, bg="#f4f4f4")
+        shell.pack(fill=tk.BOTH, expand=True)
+
+        header = tk.Frame(shell, bg="#f4f4f4", padx=14, pady=12)
+        header.pack(fill=tk.X)
         tk.Label(
             header,
             text="JobFinder",
-            font=(_font_family("display"), 20, "bold"),
+            bg="#f4f4f4",
+            fg="#111111",
+            font=(_font_family("display"), 22, "bold"),
         ).pack(anchor="w")
         tk.Label(
             header,
-            text="macOS simplified mode: launch Debug Chrome, log in to Seek and ChatGPT, then continue.",
+            text="macOS mode: plain form UI for maximum compatibility.",
+            bg="#f4f4f4",
+            fg="#444444",
             font=(_font_family(), 11),
             justify="left",
-            wraplength=900,
         ).pack(anchor="w", pady=(4, 0))
         tk.Label(
             header,
             textvariable=self.summary_var,
+            bg="#f4f4f4",
+            fg="#444444",
             font=(_font_family(), 10),
             justify="left",
-            wraplength=900,
+            wraplength=820,
         ).pack(anchor="w", pady=(4, 0))
 
-        actions = tk.Frame(outer)
-        actions.pack(fill=tk.X, pady=(0, 10))
+        actions = tk.Frame(shell, bg="#f4f4f4", padx=14, pady=4)
+        actions.pack(fill=tk.X)
         tk.Button(
             actions,
             textvariable=self.run_action_var,
@@ -206,154 +214,156 @@ class JobFinderUI:
         ).pack(side=tk.LEFT, padx=(0, 8))
         tk.Button(
             actions,
-            text="编辑 skill.md",
+            text="Edit skill.md",
             command=self.edit_skill_file,
             font=(_font_family(), 10),
         ).pack(side=tk.LEFT, padx=(0, 8))
         tk.Button(
             actions,
-            text="编辑 prompt",
+            text="Edit prompt",
             command=self.edit_prompt_file,
             font=(_font_family(), 10),
         ).pack(side=tk.LEFT, padx=(0, 8))
         tk.Button(
             actions,
-            text="保存配置",
+            text="Save Config",
             command=self.save,
             font=(_font_family(), 10),
         ).pack(side=tk.LEFT)
 
-        form_area = tk.Frame(outer)
-        form_area.pack(fill=tk.BOTH, expand=True)
-
-        basic_group = tk.LabelFrame(
-            form_area, text="Basic Setup", padx=12, pady=12, font=(_font_family(), 11, "bold")
+        scroll_wrap = tk.Frame(shell, bg="#f4f4f4", padx=14, pady=10)
+        scroll_wrap.pack(fill=tk.BOTH, expand=True)
+        canvas = tk.Canvas(scroll_wrap, bg="#f4f4f4", highlightthickness=0)
+        scrollbar = tk.Scrollbar(scroll_wrap, orient="vertical", command=canvas.yview)
+        self.simple_form_body = tk.Frame(canvas, bg="#f4f4f4")
+        self.simple_form_body.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")),
         )
-        basic_group.pack(fill=tk.X, pady=(0, 10))
-        self._build_simple_form(basic_group, [
-            ("职位地点", self.job_location),
-            ("关键词", self.keyword),
-            ("运行次数 / JD URL", self.max_runs),
-        ])
+        canvas.create_window((0, 0), window=self.simple_form_body, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        advanced_group = tk.LabelFrame(
-            form_area, text="Advanced", padx=12, pady=12, font=(_font_family(), 11, "bold")
-        )
-        advanced_group.pack(fill=tk.X, pady=(0, 10))
-        self._build_simple_advanced(advanced_group)
+        self._mac_section_title("Basic Setup")
+        self._mac_entry_row("Job Location", self.job_location)
+        self._mac_entry_row("Keyword", self.keyword)
+        self._mac_entry_row("Run Count / JD URL", self.max_runs)
 
-        personal_group = tk.LabelFrame(
-            form_area, text="Personal Info", padx=12, pady=12, font=(_font_family(), 11, "bold")
+        self._mac_section_title("Advanced")
+        self._mac_entry_row("Chrome Debug Port", self.chrome_port)
+        self._mac_entry_row("Chrome User Data Dir", self.chrome_user_data_dir)
+        self._mac_entry_row("Chrome Path", self.chrome_path)
+        self._mac_entry_row("ChatGPT URL", self.chatgpt_url)
+        self._mac_entry_row("ChatGPT Chat Title", self.chatgpt_chat_title)
+        self._mac_entry_row("Seek URL", self.seek_url)
+        self._mac_entry_row("Excel Output File", self.output_excel)
+        self._mac_entry_row("Local Sync Path", self.local_sync_path)
+        self._mac_entry_row("Skip Title Contains", self.skip_title_contains)
+        self._mac_entry_row("Delay Min Seconds", self.delay_min)
+        self._mac_entry_row("Delay Max Seconds", self.delay_max)
+        self._mac_entry_row("Resume Style", self.resume_style)
+        self._mac_entry_row("Cover Letter Style", self.cover_letter_style)
+        self._mac_checkbox_row("Include Recommendations", self.include_recommendations)
+        self._mac_checkbox_row("Include New to You", self.include_new_to_you)
+        self._mac_checkbox_row("Exit When Done", self.exit_when_done)
+        self._mac_checkbox_row("Enable Local Sync", self.enable_local_sync)
+        self._mac_checkbox_row(
+            "Pull From Sync Path Before Run", self.local_sync_pull_before_run
         )
-        personal_group.pack(fill=tk.X, pady=(0, 10))
-        self._build_simple_form(personal_group, [
-            ("姓名 (Header)", self.user_name),
-            ("电话 (Header)", self.user_phone),
-            ("Email (Header)", self.user_email),
-            ("地址 (Header)", self.user_address),
-        ])
+        self._mac_checkbox_row("Enable PDF Export", self.enable_pdf_export)
 
-        checklist_group = tk.LabelFrame(
-            form_area, text="Run Notes", padx=12, pady=12, font=(_font_family(), 11, "bold")
-        )
-        checklist_group.pack(fill=tk.X, pady=(0, 10))
-        checklist = tk.Frame(checklist_group)
-        checklist.pack(fill=tk.X)
+        self._mac_section_title("Personal Info")
+        self._mac_entry_row("Name", self.user_name)
+        self._mac_entry_row("Phone", self.user_phone)
+        self._mac_entry_row("Email", self.user_email)
+        self._mac_entry_row("Address", self.user_address)
+
+        self._mac_section_title("Run Notes")
         for line in [
-            "1. 先点击主按钮启动 Debug Chrome。",
-            "2. 在打开的 Chrome 里登录 Seek 和 ChatGPT。",
-            "3. 确认 ChatGPT 输入框可以正常输入。",
-            "4. 回到程序，再点一次主按钮继续运行。",
+            "1. Click the main button to launch Debug Chrome.",
+            "2. Log in to Seek and ChatGPT in the opened browser.",
+            "3. Confirm ChatGPT can accept input.",
+            "4. Return to JobFinder and click the main button again.",
         ]:
             tk.Label(
-                checklist,
+                self.simple_form_body,
                 text=line,
+                bg="#f4f4f4",
+                fg="#333333",
                 font=(_font_family(), 10),
-                justify="left",
                 anchor="w",
-            ).pack(anchor="w", pady=2)
+                justify="left",
+            ).pack(fill=tk.X, pady=(0, 4))
         tk.Label(
-            checklist,
+            self.simple_form_body,
             textvariable=self.status_var,
+            bg="#f4f4f4",
+            fg="#111111",
             font=(_font_family(), 14, "bold"),
-        ).pack(anchor="w", pady=(10, 2))
+            anchor="w",
+        ).pack(fill=tk.X, pady=(8, 10))
 
-        log_wrap = tk.Frame(outer)
-        log_wrap.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
-        tk.Label(log_wrap, text="Run Log", font=(_font_family(), 12, "bold")).pack(anchor="w")
+        log_wrap = tk.Frame(shell, bg="#f4f4f4", padx=14, pady=(0, 12))
+        log_wrap.pack(fill=tk.BOTH, expand=False)
+        tk.Label(
+            log_wrap,
+            text="Run Log",
+            bg="#f4f4f4",
+            fg="#111111",
+            font=(_font_family(), 12, "bold"),
+        ).pack(anchor="w")
         self.log = tk.Text(
             log_wrap,
-            height=14,
+            height=12,
+            relief="sunken",
+            bd=1,
             font=("Menlo", 10),
             padx=8,
             pady=8,
         )
-        self.log.pack(fill=tk.BOTH, expand=True)
+        self.log.pack(fill=tk.BOTH, expand=True, pady=(6, 0))
 
-    def _build_simple_form(self, parent: tk.Widget, fields) -> None:
-        frame = tk.Frame(parent)
-        frame.pack(fill=tk.BOTH, expand=True)
-        for idx, (label, var) in enumerate(fields):
-            tk.Label(frame, text=label, font=(_font_family(), 10)).grid(
-                row=idx * 2, column=0, sticky="w", pady=(0, 4)
-            )
-            entry = tk.Entry(
-                frame,
-                textvariable=var,
-                font=(_font_family(), 11),
-                relief="solid",
-                bd=1,
-            )
-            entry.grid(row=idx * 2 + 1, column=0, sticky="ew", pady=(0, 10))
-        frame.grid_columnconfigure(0, weight=1)
+    def _mac_section_title(self, text: str) -> None:
+        tk.Label(
+            self.simple_form_body,
+            text=text,
+            bg="#f4f4f4",
+            fg="#111111",
+            font=(_font_family(), 13, "bold"),
+            anchor="w",
+        ).pack(fill=tk.X, pady=(10, 6))
 
-    def _build_simple_advanced(self, parent: tk.Widget) -> None:
-        frame = tk.Frame(parent)
-        frame.pack(fill=tk.BOTH, expand=True)
-        advanced_fields = [
-            ("Chrome Debug 端口", self.chrome_port),
-            ("Chrome 用户目录", self.chrome_user_data_dir),
-            ("Chrome 路径", self.chrome_path),
-            ("ChatGPT URL", self.chatgpt_url),
-            ("ChatGPT 对话名称", self.chatgpt_chat_title),
-            ("搜索地址 (Seek URL)", self.seek_url),
-            ("Excel 输出文件", self.output_excel),
-            ("同步文件路径", self.local_sync_path),
-            ("跳过标题包含", self.skip_title_contains),
-            ("任务间隔秒数 (最小)", self.delay_min),
-            ("任务间隔秒数 (最大)", self.delay_max),
-            ("Resume Style", self.resume_style),
-            ("Cover Letter Style", self.cover_letter_style),
-        ]
-        row = 0
-        for label, var in advanced_fields:
-            tk.Label(frame, text=label, font=(_font_family(), 10)).grid(
-                row=row, column=0, sticky="w", pady=(0, 4)
-            )
-            entry = tk.Entry(
-                frame,
-                textvariable=var,
-                font=(_font_family(), 11),
-                relief="solid",
-                bd=1,
-            )
-            entry.grid(row=row + 1, column=0, sticky="ew", pady=(0, 10))
-            row += 2
+    def _mac_entry_row(self, label: str, var: tk.StringVar) -> None:
+        tk.Label(
+            self.simple_form_body,
+            text=label,
+            bg="#f4f4f4",
+            fg="#333333",
+            font=(_font_family(), 10),
+            anchor="w",
+        ).pack(fill=tk.X)
+        entry = tk.Entry(
+            self.simple_form_body,
+            textvariable=var,
+            font=(_font_family(), 11),
+            relief="sunken",
+            bd=1,
+        )
+        entry.pack(fill=tk.X, pady=(2, 8), ipady=6)
 
-        for label, var in [
-            ("优先处理推荐页", self.include_recommendations),
-            ("优先处理 New to you", self.include_new_to_you),
-            ("完成之后退出程序", self.exit_when_done),
-            ("本地盘符同步(不上传)", self.enable_local_sync),
-            ("运行前从同步路径读取", self.local_sync_pull_before_run),
-            ("导出简历/求职信 PDF", self.enable_pdf_export),
-        ]:
-            tk.Checkbutton(frame, text=label, variable=var, font=(_font_family(), 10)).grid(
-                row=row, column=0, sticky="w", pady=(0, 6)
-            )
-            row += 1
-
-        frame.grid_columnconfigure(0, weight=1)
+    def _mac_checkbox_row(self, label: str, var: tk.BooleanVar) -> None:
+        tk.Checkbutton(
+            self.simple_form_body,
+            text=label,
+            variable=var,
+            bg="#f4f4f4",
+            fg="#111111",
+            activebackground="#f4f4f4",
+            activeforeground="#111111",
+            font=(_font_family(), 10),
+            anchor="w",
+        ).pack(fill=tk.X, pady=(0, 4))
 
     def _build_sidebar(self, parent: tk.Frame) -> None:
         top = tk.Frame(parent, bg=SIDEBAR_BG, padx=18, pady=20)
@@ -1064,6 +1074,7 @@ class JobFinderUI:
             chrome_path,
             f"--remote-debugging-port={config.chrome_debug_port}",
             f"--user-data-dir={user_dir}",
+            "--new-window",
             config.seek_url or "https://www.seek.com.au/",
         ]
         creationflags = (
@@ -1097,6 +1108,7 @@ class JobFinderUI:
                         chrome_path,
                         f"--remote-debugging-port={config.chrome_debug_port}",
                         f"--user-data-dir={user_dir}",
+                        "--new-tab",
                         config.chatgpt_url or "https://chat.openai.com/",
                     ],
                     creationflags=creationflags,
