@@ -197,12 +197,14 @@ class JobFinderUI:
 
         basic = tk.LabelFrame(container, text="Basic Setup", padx=10, pady=10)
         basic.pack(fill=tk.X, pady=(0, 10))
+        basic.grid_columnconfigure(1, weight=1, minsize=420)
         self._macos_grid_entry_row(basic, 0, "Job Location", self.job_location)
         self._macos_grid_entry_row(basic, 1, "Keyword", self.keyword)
         self._macos_grid_entry_row(basic, 2, "Run Count / JD URL", self.max_runs)
 
         advanced = tk.LabelFrame(container, text="Advanced", padx=10, pady=10)
         advanced.pack(fill=tk.X, pady=(0, 10))
+        advanced.grid_columnconfigure(1, weight=1, minsize=420)
         self._macos_grid_entry_row(advanced, 0, "Chrome Debug Port", self.chrome_port)
         self._macos_grid_entry_row(
             advanced, 1, "Chrome User Data Dir", self.chrome_user_data_dir
@@ -224,8 +226,6 @@ class JobFinderUI:
         self._macos_grid_entry_row(
             advanced, 12, "Cover Letter Style", self.cover_letter_style
         )
-        advanced.grid_columnconfigure(1, weight=1)
-
         flags = tk.LabelFrame(container, text="Options", padx=10, pady=10)
         flags.pack(fill=tk.X, pady=(0, 10))
         for row, (label, var) in enumerate(
@@ -244,11 +244,11 @@ class JobFinderUI:
 
         personal = tk.LabelFrame(container, text="Personal Info", padx=10, pady=10)
         personal.pack(fill=tk.X, pady=(0, 10))
+        personal.grid_columnconfigure(1, weight=1, minsize=420)
         self._macos_grid_entry_row(personal, 0, "Name", self.user_name)
         self._macos_grid_entry_row(personal, 1, "Phone", self.user_phone)
         self._macos_grid_entry_row(personal, 2, "Email", self.user_email)
         self._macos_grid_entry_row(personal, 3, "Address", self.user_address)
-        personal.grid_columnconfigure(1, weight=1)
 
         notes = tk.LabelFrame(container, text="Run Notes", padx=10, pady=10)
         notes.pack(fill=tk.X, pady=(0, 10))
@@ -284,11 +284,15 @@ class JobFinderUI:
         entry = tk.Entry(
             parent,
             textvariable=var,
+            width=56,
             bg="#ffffff",
             fg="#111111",
             insertbackground="#111111",
             relief="sunken",
             bd=1,
+            highlightthickness=1,
+            highlightbackground="#888888",
+            highlightcolor="#4a90e2",
             font=(_font_family(), 11),
         )
         entry.grid(row=row, column=1, sticky="ew", pady=4)
