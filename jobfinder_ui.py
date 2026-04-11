@@ -32,12 +32,21 @@ ACCENT_SOFT = "#dbe7ff"
 ACCENT_TEXT = "#163152"
 
 
+def _font_family(kind: str = "body") -> str:
+    if sys.platform == "darwin":
+        return "Helvetica" if kind == "display" else "Arial"
+    if sys.platform == "win32":
+        return "Segoe UI"
+    return "Arial"
+
+
 class JobFinderUI:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("JobFinder")
         self.root.configure(bg=SURFACE_BG)
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.simple_mode = sys.platform == "darwin"
 
         self.config = load_config(CONFIG_PATH)
         self.chrome_processes = []
@@ -107,29 +116,36 @@ class JobFinderUI:
 
     def _configure_styles(self) -> None:
         style = ttk.Style()
-        try:
-            style.theme_use("clam")
-        except tk.TclError:
-            pass
-        style.configure(
-            "JobFinder.TEntry",
-            fieldbackground=CARD_BG,
-            background=CARD_BG,
-            foreground=TEXT_PRIMARY,
-            bordercolor=BORDER,
-            lightcolor=BORDER,
-            darkcolor=BORDER,
-            padding=(12, 10),
-            relief="flat",
-        )
-        style.map(
-            "JobFinder.TEntry",
-            bordercolor=[("focus", "#9ab6f5")],
-            lightcolor=[("focus", "#9ab6f5")],
-            darkcolor=[("focus", "#9ab6f5")],
-        )
+        if sys.platform != "darwin":
+            try:
+                style.theme_use("clam")
+            except tk.TclError:
+                pass
+            style.configure(
+                "JobFinder.TEntry",
+                fieldbackground=CARD_BG,
+                background=CARD_BG,
+                foreground=TEXT_PRIMARY,
+                bordercolor=BORDER,
+                lightcolor=BORDER,
+                darkcolor=BORDER,
+                padding=(12, 10),
+                relief="flat",
+            )
+            style.map(
+                "JobFinder.TEntry",
+                bordercolor=[("focus", "#9ab6f5")],
+                lightcolor=[("focus", "#9ab6f5")],
+                darkcolor=[("focus", "#9ab6f5")],
+            )
 
     def _build_ui(self) -> None:
+        if self.simple_mode:
+            self._build_simple_ui()
+            return
+        self._build_full_ui()
+
+    def _build_full_ui(self) -> None:
         self.root.grid_columnconfigure(0, weight=0)
         self.root.grid_columnconfigure(1, weight=1)
         self.root.grid_rowconfigure(0, weight=1)
@@ -151,6 +167,62 @@ class JobFinderUI:
         self._build_log_card(content)
         self.show_section("basic")
 
+    def _build_simple_ui(self) -> None:
+        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_rowconfigure(0, weight=1)
+
+        shell = tk.Frame(self.root, bg=SURFACE_BG, padx=18, pady=18)
+        shell.grid(row=0, column=0, sticky="nsew")
+        shell.grid_columnconfigure(0, weight=1)
+
+        header = self._create_card(shell)
+        header.pack(fill=tk.X, pady=(0, 14))
+        tk.Label(
+            header,
+            text="JobFinder",
+            bg=CARD_BG,
+            fg=TEXT_PRIMARY,
+            font=(_font_family("display"), 22, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            header,
+            text="Simplified macOS layout. Fill the fields, launch Debug Chrome, log in, then continue running.",
+            bg=CARD_BG,
+            fg=TEXT_MUTED,
+            font=(_font_family(), 11),
+            justify="left",
+            wraplength=900,
+        ).pack(anchor="w", pady=(8, 0))
+        tk.Label(
+            header,
+            textvariable=self.summary_var,
+            bg=CARD_BG,
+            fg=TEXT_MUTED,
+            font=(_font_family(), 10),
+            justify="left",
+            wraplength=900,
+        ).pack(anchor="w", pady=(10, 0))
+
+        self._build_actions(shell)
+
+        basic = tk.Frame(shell, bg=SURFACE_BG)
+        basic.pack(fill=tk.X, pady=(0, 12))
+        self._build_basic_section(basic)
+
+        advanced = tk.Frame(shell, bg=SURFACE_BG)
+        advanced.pack(fill=tk.X, pady=(0, 12))
+        self._build_advanced_section(advanced)
+
+        personal = tk.Frame(shell, bg=SURFACE_BG)
+        personal.pack(fill=tk.X, pady=(0, 12))
+        self._build_personal_section(personal)
+
+        runlog = tk.Frame(shell, bg=SURFACE_BG)
+        runlog.pack(fill=tk.X, pady=(0, 12))
+        self._build_runlog_section(runlog)
+
+        self._build_log_card(shell)
+
     def _build_sidebar(self, parent: tk.Frame) -> None:
         top = tk.Frame(parent, bg=SIDEBAR_BG, padx=18, pady=20)
         top.pack(fill=tk.X)
@@ -160,14 +232,14 @@ class JobFinderUI:
             text="JobFinder",
             bg=SIDEBAR_BG,
             fg=TEXT_PRIMARY,
-            font=("SF Pro Display", 22, "bold"),
+            font=(_font_family("display"), 22, "bold"),
         ).pack(anchor="w")
         tk.Label(
             top,
             text="Apple-style control panel for Seek + ChatGPT automation",
             bg=SIDEBAR_BG,
             fg=TEXT_MUTED,
-            font=("Segoe UI", 10),
+            font=(_font_family(), 10),
             wraplength=190,
             justify="left",
         ).pack(anchor="w", pady=(8, 0))
@@ -195,7 +267,7 @@ class JobFinderUI:
                 fg=TEXT_PRIMARY,
                 activebackground=ACCENT_SOFT,
                 activeforeground=TEXT_PRIMARY,
-                font=("Segoe UI", 11, "bold"),
+                font=(_font_family(), 11, "bold"),
                 cursor="hand2",
             )
             button.pack(fill=tk.X, pady=(0, 8))
@@ -206,7 +278,7 @@ class JobFinderUI:
                 text=subtitle,
                 bg=SIDEBAR_BG,
                 fg=TEXT_MUTED,
-                font=("Segoe UI", 9),
+                font=(_font_family(), 9),
                 justify="left",
                 anchor="w",
                 padx=18,
@@ -220,14 +292,14 @@ class JobFinderUI:
             text="Tip",
             bg=SIDEBAR_BG,
             fg=TEXT_MUTED,
-            font=("Segoe UI", 9, "bold"),
+            font=(_font_family(), 9, "bold"),
         ).pack(anchor="w")
         tk.Label(
             footer,
             text="留空 ChatGPT 对话名称时，会优先使用当前对话，通常更快。",
             bg=SIDEBAR_BG,
             fg=TEXT_MUTED,
-            font=("Segoe UI", 9),
+            font=(_font_family(), 9),
             justify="left",
             wraplength=190,
         ).pack(anchor="w", pady=(6, 0))
@@ -246,14 +318,14 @@ class JobFinderUI:
             text="Ready to apply smarter",
             bg=CARD_BG,
             fg=TEXT_PRIMARY,
-            font=("SF Pro Display", 24, "bold"),
+            font=(_font_family("display"), 24, "bold"),
         ).pack(anchor="w")
         tk.Label(
             text_block,
             text="A calmer desktop layout with larger controls, grouped settings, and a cleaner run workflow.",
             bg=CARD_BG,
             fg=TEXT_MUTED,
-            font=("Segoe UI", 11),
+            font=(_font_family(), 11),
             wraplength=620,
             justify="left",
         ).pack(anchor="w", pady=(8, 0))
@@ -272,28 +344,31 @@ class JobFinderUI:
             text="Status",
             bg="#f7f8fb",
             fg=TEXT_MUTED,
-            font=("Segoe UI", 9, "bold"),
+            font=(_font_family(), 9, "bold"),
         ).pack(anchor="w")
         tk.Label(
             status_card,
             textvariable=self.status_var,
             bg="#f7f8fb",
             fg=TEXT_PRIMARY,
-            font=("Segoe UI", 16, "bold"),
+            font=(_font_family(), 16, "bold"),
         ).pack(anchor="w", pady=(6, 0))
         tk.Label(
             status_card,
             textvariable=self.summary_var,
             bg="#f7f8fb",
             fg=TEXT_MUTED,
-            font=("Segoe UI", 9),
+            font=(_font_family(), 9),
             wraplength=220,
             justify="left",
         ).pack(anchor="w", pady=(6, 0))
 
     def _build_actions(self, parent: tk.Frame) -> None:
         bar = tk.Frame(parent, bg=SURFACE_BG)
-        bar.grid(row=1, column=0, sticky="ew", pady=(0, 14))
+        if self.simple_mode:
+            bar.pack(fill=tk.X, pady=(0, 14))
+        else:
+            bar.grid(row=1, column=0, sticky="ew", pady=(0, 14))
         for col in range(5):
             bar.grid_columnconfigure(col, weight=1)
 
@@ -367,23 +442,30 @@ class JobFinderUI:
             "Search Setup",
             "核心搜索条件和运行目标，适合每次启动前先确认。",
         )
-        search_card.grid(row=0, column=0, sticky="nsew", pady=(0, 12))
-        search_card.grid_columnconfigure(0, weight=1)
+        if self.simple_mode:
+            search_card.pack(fill=tk.X, pady=(0, 12))
+        else:
+            search_card.grid(row=0, column=0, sticky="nsew", pady=(0, 12))
+            search_card.grid_columnconfigure(0, weight=1)
         self._add_text_field(search_card, "职位地点", self.job_location, 0)
         self._add_text_field(search_card, "关键词", self.keyword, 1)
         self._add_text_field(search_card, "运行次数 / JD URL", self.max_runs, 2)
 
     def _build_advanced_section(self, parent: tk.Frame) -> None:
         parent.grid_columnconfigure(0, weight=1)
-        parent.grid_columnconfigure(1, weight=1)
+        if not self.simple_mode:
+            parent.grid_columnconfigure(1, weight=1)
 
         style_card = self._create_titled_card(
             parent,
             "Writing Style & Run Behavior",
             "控制 resume / cover letter 的写作风格，以及处理顺序和运行结束行为。",
         )
-        style_card.grid(row=0, column=0, sticky="nsew", padx=(0, 8), pady=(0, 12))
-        style_card.grid_columnconfigure(0, weight=1)
+        if self.simple_mode:
+            style_card.pack(fill=tk.X, pady=(0, 12))
+        else:
+            style_card.grid(row=0, column=0, sticky="nsew", padx=(0, 8), pady=(0, 12))
+            style_card.grid_columnconfigure(0, weight=1)
         self._add_dropdown_field(
             style_card, "Resume Style", self.resume_style, RESUME_STYLE_OPTIONS
         )
@@ -402,8 +484,11 @@ class JobFinderUI:
             "Chrome & ChatGPT",
             "调试端口、Profile 与 ChatGPT 会话设置。",
         )
-        chrome_card.grid(row=1, column=0, sticky="nsew", padx=(0, 8), pady=(0, 12))
-        chrome_card.grid_columnconfigure(0, weight=1)
+        if self.simple_mode:
+            chrome_card.pack(fill=tk.X, pady=(0, 12))
+        else:
+            chrome_card.grid(row=1, column=0, sticky="nsew", padx=(0, 8), pady=(0, 12))
+            chrome_card.grid_columnconfigure(0, weight=1)
         self._add_text_field(chrome_card, "Chrome Debug 端口", self.chrome_port, 0)
         self._add_text_field(
             chrome_card,
@@ -429,8 +514,11 @@ class JobFinderUI:
             "Files & Timing",
             "Excel 输出、同步和节流相关设置。",
         )
-        file_card.grid(row=0, column=1, rowspan=2, sticky="nsew", padx=(8, 0), pady=(0, 12))
-        file_card.grid_columnconfigure(0, weight=1)
+        if self.simple_mode:
+            file_card.pack(fill=tk.X, pady=(0, 12))
+        else:
+            file_card.grid(row=0, column=1, rowspan=2, sticky="nsew", padx=(8, 0), pady=(0, 12))
+            file_card.grid_columnconfigure(0, weight=1)
         self._add_text_field(
             file_card, "Excel 输出文件", self.output_excel, 0, browse="savefile"
         )
@@ -459,8 +547,11 @@ class JobFinderUI:
             "Resume Header Profile",
             "这些信息会用于 PDF Header 和部分简历生成场景。",
         )
-        card.grid(row=0, column=0, sticky="nsew", pady=(0, 12))
-        card.grid_columnconfigure(0, weight=1)
+        if self.simple_mode:
+            card.pack(fill=tk.X, pady=(0, 12))
+        else:
+            card.grid(row=0, column=0, sticky="nsew", pady=(0, 12))
+            card.grid_columnconfigure(0, weight=1)
         self._add_text_field(card, "姓名 (Header)", self.user_name, 0)
         self._add_text_field(card, "电话 (Header)", self.user_phone, 1)
         self._add_text_field(card, "Email (Header)", self.user_email, 2)
@@ -468,14 +559,18 @@ class JobFinderUI:
 
     def _build_runlog_section(self, parent: tk.Frame) -> None:
         parent.grid_columnconfigure(0, weight=1)
-        parent.grid_columnconfigure(1, weight=1)
+        if not self.simple_mode:
+            parent.grid_columnconfigure(1, weight=1)
 
         card = self._create_titled_card(
             parent,
             "Run Checklist",
             "每次运行前快速核对，能减少因浏览器状态残留导致的中断。",
         )
-        card.grid(row=0, column=0, sticky="nsew", padx=(0, 8), pady=(0, 12))
+        if self.simple_mode:
+            card.pack(fill=tk.X, pady=(0, 12))
+        else:
+            card.grid(row=0, column=0, sticky="nsew", padx=(0, 8), pady=(0, 12))
         for line in [
             "1. 先保存配置，再启动 Debug Chrome。",
             "2. 确认 ChatGPT 已登录，并且草稿输入框已被清空。",
@@ -487,7 +582,7 @@ class JobFinderUI:
                 text=line,
                 bg=CARD_BG,
                 fg=TEXT_PRIMARY,
-                font=("Segoe UI", 10),
+                font=(_font_family(), 10),
                 justify="left",
                 anchor="w",
                 wraplength=420,
@@ -498,20 +593,23 @@ class JobFinderUI:
             "Session Summary",
             "当前窗口内的快速状态摘要。",
         )
-        stats.grid(row=0, column=1, sticky="nsew", padx=(8, 0), pady=(0, 12))
+        if self.simple_mode:
+            stats.pack(fill=tk.X, pady=(0, 12))
+        else:
+            stats.grid(row=0, column=1, sticky="nsew", padx=(8, 0), pady=(0, 12))
         tk.Label(
             stats,
             textvariable=self.status_var,
             bg=CARD_BG,
             fg=TEXT_PRIMARY,
-            font=("Segoe UI", 20, "bold"),
+            font=(_font_family(), 20, "bold"),
         ).pack(anchor="w")
         tk.Label(
             stats,
             textvariable=self.summary_var,
             bg=CARD_BG,
             fg=TEXT_MUTED,
-            font=("Segoe UI", 10),
+            font=(_font_family(), 10),
             wraplength=380,
             justify="left",
         ).pack(anchor="w", pady=(10, 0))
@@ -522,7 +620,10 @@ class JobFinderUI:
             "Run Log",
             "实时输出会显示在这里，便于观察 Chrome、Seek 和 ChatGPT 的当前状态。",
         )
-        card.grid(row=3, column=0, sticky="nsew")
+        if self.simple_mode:
+            card.pack(fill=tk.BOTH, expand=True)
+        else:
+            card.grid(row=3, column=0, sticky="nsew")
 
         self.log = tk.Text(
             card,
@@ -557,14 +658,14 @@ class JobFinderUI:
             text=title,
             bg=CARD_BG,
             fg=TEXT_PRIMARY,
-            font=("Segoe UI", 14, "bold"),
+            font=(_font_family(), 14, "bold"),
         ).pack(anchor="w")
         tk.Label(
             card,
             text=subtitle,
             bg=CARD_BG,
             fg=TEXT_MUTED,
-            font=("Segoe UI", 10),
+            font=(_font_family(), 10),
             justify="left",
             wraplength=420,
         ).pack(anchor="w", pady=(6, 16))
@@ -591,7 +692,7 @@ class JobFinderUI:
             fg=fg,
             activebackground=bg,
             activeforeground=fg,
-            font=("Segoe UI", 11, "bold"),
+            font=(_font_family(), 11, "bold"),
             padx=18,
             pady=16,
             cursor="hand2",
@@ -613,12 +714,24 @@ class JobFinderUI:
             text=label,
             bg=CARD_BG,
             fg=TEXT_MUTED,
-            font=("Segoe UI", 9, "bold"),
+            font=(_font_family(), 9, "bold"),
         ).grid(row=0, column=0, sticky="w")
         field.grid_columnconfigure(0, weight=1)
 
-        entry = ttk.Entry(field, textvariable=var, style="JobFinder.TEntry")
-        entry.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        if sys.platform == "darwin":
+            entry = tk.Entry(
+                field,
+                textvariable=var,
+                relief="solid",
+                bd=1,
+                bg=CARD_BG,
+                fg=TEXT_PRIMARY,
+                insertbackground=TEXT_PRIMARY,
+                font=(_font_family(), 11),
+            )
+        else:
+            entry = ttk.Entry(field, textvariable=var, style="JobFinder.TEntry")
+        entry.grid(row=1, column=0, sticky="ew", pady=(8, 0), ipady=6)
         if browse:
             tk.Button(
                 field,
@@ -630,7 +743,7 @@ class JobFinderUI:
                 fg=TEXT_PRIMARY,
                 activebackground="#eef2f7",
                 activeforeground=TEXT_PRIMARY,
-                font=("Segoe UI", 9, "bold"),
+                font=(_font_family(), 9, "bold"),
                 padx=14,
                 pady=10,
                 cursor="hand2",
@@ -651,7 +764,7 @@ class JobFinderUI:
             activebackground="#f8f9fc",
             activeforeground=TEXT_PRIMARY,
             selectcolor=CARD_BG,
-            font=("Segoe UI", 10),
+            font=(_font_family(), 10),
             anchor="w",
         )
         cb.pack(anchor="w")
@@ -670,16 +783,32 @@ class JobFinderUI:
             text=label,
             bg=CARD_BG,
             fg=TEXT_MUTED,
-            font=("Segoe UI", 9, "bold"),
+            font=(_font_family(), 9, "bold"),
         ).pack(anchor="w")
-        combo = ttk.Combobox(
-            field,
-            textvariable=var,
-            values=list(values),
-            state="readonly",
-            font=("Segoe UI", 10),
-        )
-        combo.pack(fill=tk.X, pady=(8, 0))
+        if sys.platform == "darwin":
+            combo = tk.OptionMenu(field, var, *list(values))
+            combo.configure(
+                bg=CARD_BG,
+                fg=TEXT_PRIMARY,
+                activebackground="#eef2f7",
+                activeforeground=TEXT_PRIMARY,
+                relief="solid",
+                bd=1,
+                font=(_font_family(), 10),
+                anchor="w",
+                highlightthickness=0,
+            )
+            combo["menu"].configure(font=(_font_family(), 10))
+            combo.pack(fill=tk.X, pady=(8, 0))
+        else:
+            combo = ttk.Combobox(
+                field,
+                textvariable=var,
+                values=list(values),
+                state="readonly",
+                font=(_font_family(), 10),
+            )
+            combo.pack(fill=tk.X, pady=(8, 0))
 
     def _select_path(self, var: tk.StringVar, browse: str) -> None:
         if browse == "dir":
