@@ -30,7 +30,7 @@ BORDER = "#d7dce5"
 ACCENT = "#0f172a"
 ACCENT_SOFT = "#dbe7ff"
 ACCENT_TEXT = "#163152"
-MACOS_SAFE_MODE_VERSION = "macOS Safe Mode v5"
+MACOS_SAFE_MODE_VERSION = "macOS Safe Mode v6"
 
 
 def _font_family(kind: str = "body") -> str:
@@ -197,34 +197,32 @@ class JobFinderUI:
 
         basic = tk.LabelFrame(container, text="Basic Setup", padx=10, pady=10)
         basic.pack(fill=tk.X, pady=(0, 10))
-        basic.grid_columnconfigure(1, weight=1, minsize=420)
-        self._macos_grid_entry_row(basic, 0, "Job Location", self.job_location)
-        self._macos_grid_entry_row(basic, 1, "Keyword", self.keyword)
-        self._macos_grid_entry_row(basic, 2, "Run Count / JD URL", self.max_runs)
+        self._macos_stack_entry_row(basic, "Job Location", self.job_location)
+        self._macos_stack_entry_row(basic, "Keyword", self.keyword)
+        self._macos_stack_entry_row(basic, "Run Count / JD URL", self.max_runs)
 
         advanced = tk.LabelFrame(container, text="Advanced", padx=10, pady=10)
         advanced.pack(fill=tk.X, pady=(0, 10))
-        advanced.grid_columnconfigure(1, weight=1, minsize=420)
-        self._macos_grid_entry_row(advanced, 0, "Chrome Debug Port", self.chrome_port)
-        self._macos_grid_entry_row(
-            advanced, 1, "Chrome User Data Dir", self.chrome_user_data_dir
+        self._macos_stack_entry_row(advanced, "Chrome Debug Port", self.chrome_port)
+        self._macos_stack_entry_row(
+            advanced, "Chrome User Data Dir", self.chrome_user_data_dir
         )
-        self._macos_grid_entry_row(advanced, 2, "Chrome Path", self.chrome_path)
-        self._macos_grid_entry_row(advanced, 3, "ChatGPT URL", self.chatgpt_url)
-        self._macos_grid_entry_row(
-            advanced, 4, "ChatGPT Chat Title", self.chatgpt_chat_title
+        self._macos_stack_entry_row(advanced, "Chrome Path", self.chrome_path)
+        self._macos_stack_entry_row(advanced, "ChatGPT URL", self.chatgpt_url)
+        self._macos_stack_entry_row(
+            advanced, "ChatGPT Chat Title", self.chatgpt_chat_title
         )
-        self._macos_grid_entry_row(advanced, 5, "Seek URL", self.seek_url)
-        self._macos_grid_entry_row(advanced, 6, "Excel Output File", self.output_excel)
-        self._macos_grid_entry_row(advanced, 7, "Local Sync Path", self.local_sync_path)
-        self._macos_grid_entry_row(
-            advanced, 8, "Skip Title Contains", self.skip_title_contains
+        self._macos_stack_entry_row(advanced, "Seek URL", self.seek_url)
+        self._macos_stack_entry_row(advanced, "Excel Output File", self.output_excel)
+        self._macos_stack_entry_row(advanced, "Local Sync Path", self.local_sync_path)
+        self._macos_stack_entry_row(
+            advanced, "Skip Title Contains", self.skip_title_contains
         )
-        self._macos_grid_entry_row(advanced, 9, "Delay Min Seconds", self.delay_min)
-        self._macos_grid_entry_row(advanced, 10, "Delay Max Seconds", self.delay_max)
-        self._macos_grid_entry_row(advanced, 11, "Resume Style", self.resume_style)
-        self._macos_grid_entry_row(
-            advanced, 12, "Cover Letter Style", self.cover_letter_style
+        self._macos_stack_entry_row(advanced, "Delay Min Seconds", self.delay_min)
+        self._macos_stack_entry_row(advanced, "Delay Max Seconds", self.delay_max)
+        self._macos_stack_entry_row(advanced, "Resume Style", self.resume_style)
+        self._macos_stack_entry_row(
+            advanced, "Cover Letter Style", self.cover_letter_style
         )
         flags = tk.LabelFrame(container, text="Options", padx=10, pady=10)
         flags.pack(fill=tk.X, pady=(0, 10))
@@ -244,11 +242,10 @@ class JobFinderUI:
 
         personal = tk.LabelFrame(container, text="Personal Info", padx=10, pady=10)
         personal.pack(fill=tk.X, pady=(0, 10))
-        personal.grid_columnconfigure(1, weight=1, minsize=420)
-        self._macos_grid_entry_row(personal, 0, "Name", self.user_name)
-        self._macos_grid_entry_row(personal, 1, "Phone", self.user_phone)
-        self._macos_grid_entry_row(personal, 2, "Email", self.user_email)
-        self._macos_grid_entry_row(personal, 3, "Address", self.user_address)
+        self._macos_stack_entry_row(personal, "Name", self.user_name)
+        self._macos_stack_entry_row(personal, "Phone", self.user_phone)
+        self._macos_stack_entry_row(personal, "Email", self.user_email)
+        self._macos_stack_entry_row(personal, "Address", self.user_address)
 
         notes = tk.LabelFrame(container, text="Run Notes", padx=10, pady=10)
         notes.pack(fill=tk.X, pady=(0, 10))
@@ -277,10 +274,10 @@ class JobFinderUI:
         )
         self.log.pack(fill=tk.BOTH, expand=True)
 
-    def _macos_grid_entry_row(
-        self, parent: tk.Widget, row: int, label: str, var: tk.StringVar
+    def _macos_stack_entry_row(
+        self, parent: tk.Widget, label: str, var: tk.StringVar
     ) -> None:
-        tk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=4, padx=(0, 8))
+        tk.Label(parent, text=label, anchor="w", justify="left").pack(fill=tk.X, pady=(2, 2))
         entry = tk.Entry(
             parent,
             textvariable=var,
@@ -295,7 +292,7 @@ class JobFinderUI:
             highlightcolor="#4a90e2",
             font=(_font_family(), 11),
         )
-        entry.grid(row=row, column=1, sticky="ew", pady=4)
+        entry.pack(fill=tk.X, pady=(0, 8), ipady=6)
 
     def _build_full_ui(self) -> None:
         self.root.grid_columnconfigure(0, weight=0)
