@@ -223,33 +223,41 @@ class JobFinderUI:
             font=(_font_family(), 10),
         ).pack(side=tk.LEFT)
 
-        notebook = ttk.Notebook(outer)
-        notebook.pack(fill=tk.BOTH, expand=True)
+        form_area = tk.Frame(outer)
+        form_area.pack(fill=tk.BOTH, expand=True)
 
-        tab_basic = ttk.Frame(notebook)
-        tab_advanced = ttk.Frame(notebook)
-        tab_personal = ttk.Frame(notebook)
-        tab_runlog = ttk.Frame(notebook)
-        notebook.add(tab_basic, text="Basic")
-        notebook.add(tab_advanced, text="Advanced")
-        notebook.add(tab_personal, text="Personal")
-        notebook.add(tab_runlog, text="Run Log")
-
-        self._build_simple_form(tab_basic, [
+        basic_group = tk.LabelFrame(
+            form_area, text="Basic Setup", padx=12, pady=12, font=(_font_family(), 11, "bold")
+        )
+        basic_group.pack(fill=tk.X, pady=(0, 10))
+        self._build_simple_form(basic_group, [
             ("职位地点", self.job_location),
             ("关键词", self.keyword),
             ("运行次数 / JD URL", self.max_runs),
         ])
 
-        self._build_simple_advanced(tab_advanced)
-        self._build_simple_form(tab_personal, [
+        advanced_group = tk.LabelFrame(
+            form_area, text="Advanced", padx=12, pady=12, font=(_font_family(), 11, "bold")
+        )
+        advanced_group.pack(fill=tk.X, pady=(0, 10))
+        self._build_simple_advanced(advanced_group)
+
+        personal_group = tk.LabelFrame(
+            form_area, text="Personal Info", padx=12, pady=12, font=(_font_family(), 11, "bold")
+        )
+        personal_group.pack(fill=tk.X, pady=(0, 10))
+        self._build_simple_form(personal_group, [
             ("姓名 (Header)", self.user_name),
             ("电话 (Header)", self.user_phone),
             ("Email (Header)", self.user_email),
             ("地址 (Header)", self.user_address),
         ])
 
-        checklist = tk.Frame(tab_runlog, padx=12, pady=12)
+        checklist_group = tk.LabelFrame(
+            form_area, text="Run Notes", padx=12, pady=12, font=(_font_family(), 11, "bold")
+        )
+        checklist_group.pack(fill=tk.X, pady=(0, 10))
+        checklist = tk.Frame(checklist_group)
         checklist.pack(fill=tk.X)
         for line in [
             "1. 先点击主按钮启动 Debug Chrome。",
@@ -283,18 +291,24 @@ class JobFinderUI:
         self.log.pack(fill=tk.BOTH, expand=True)
 
     def _build_simple_form(self, parent: tk.Widget, fields) -> None:
-        frame = tk.Frame(parent, padx=12, pady=12)
+        frame = tk.Frame(parent)
         frame.pack(fill=tk.BOTH, expand=True)
         for idx, (label, var) in enumerate(fields):
             tk.Label(frame, text=label, font=(_font_family(), 10)).grid(
                 row=idx * 2, column=0, sticky="w", pady=(0, 4)
             )
-            entry = tk.Entry(frame, textvariable=var, font=(_font_family(), 11))
+            entry = tk.Entry(
+                frame,
+                textvariable=var,
+                font=(_font_family(), 11),
+                relief="solid",
+                bd=1,
+            )
             entry.grid(row=idx * 2 + 1, column=0, sticky="ew", pady=(0, 10))
         frame.grid_columnconfigure(0, weight=1)
 
     def _build_simple_advanced(self, parent: tk.Widget) -> None:
-        frame = tk.Frame(parent, padx=12, pady=12)
+        frame = tk.Frame(parent)
         frame.pack(fill=tk.BOTH, expand=True)
         advanced_fields = [
             ("Chrome Debug 端口", self.chrome_port),
@@ -308,30 +322,23 @@ class JobFinderUI:
             ("跳过标题包含", self.skip_title_contains),
             ("任务间隔秒数 (最小)", self.delay_min),
             ("任务间隔秒数 (最大)", self.delay_max),
+            ("Resume Style", self.resume_style),
+            ("Cover Letter Style", self.cover_letter_style),
         ]
         row = 0
         for label, var in advanced_fields:
             tk.Label(frame, text=label, font=(_font_family(), 10)).grid(
                 row=row, column=0, sticky="w", pady=(0, 4)
             )
-            entry = tk.Entry(frame, textvariable=var, font=(_font_family(), 11))
+            entry = tk.Entry(
+                frame,
+                textvariable=var,
+                font=(_font_family(), 11),
+                relief="solid",
+                bd=1,
+            )
             entry.grid(row=row + 1, column=0, sticky="ew", pady=(0, 10))
             row += 2
-
-        tk.Label(frame, text="Resume Style", font=(_font_family(), 10)).grid(
-            row=row, column=0, sticky="w", pady=(0, 4)
-        )
-        tk.OptionMenu(frame, self.resume_style, *RESUME_STYLE_OPTIONS).grid(
-            row=row + 1, column=0, sticky="ew", pady=(0, 10)
-        )
-        row += 2
-        tk.Label(frame, text="Cover Letter Style", font=(_font_family(), 10)).grid(
-            row=row, column=0, sticky="w", pady=(0, 4)
-        )
-        tk.OptionMenu(
-            frame, self.cover_letter_style, *COVER_LETTER_STYLE_OPTIONS
-        ).grid(row=row + 1, column=0, sticky="ew", pady=(0, 10))
-        row += 2
 
         for label, var in [
             ("优先处理推荐页", self.include_recommendations),
