@@ -11,6 +11,7 @@ git clone https://github.com/carl2083/openjobfinder
 cd openjobfinder
 python -m venv venv
 venv\Scripts\activate
+python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 copy config.example.json config.json
 python jobfinder_ui.py
@@ -31,7 +32,8 @@ git clone https://github.com/carl2083/openjobfinder
 cd openjobfinder
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+python3 -m pip install --upgrade pip setuptools wheel
+pip install --no-compile -r requirements.txt
 cp config.example.json config.json
 python3 jobfinder_ui.py
 ```
@@ -47,7 +49,7 @@ Then:
 ## 2. Other Info
 
 - Python 3.8+ is required.
-- Upgrading `pip` is optional, but helpful if dependency installation fails.
+- Upgrading `pip`, `setuptools`, and `wheel` is recommended before installing dependencies.
 - If you pulled a newer version of the app, run `pip install -r requirements.txt` again so `PySide6` is installed.
 - `Edit skill.md` creates a default template for new users, including a "Copy this to ChatGPT" prompt for building a reusable skills profile.
 - `Edit prompt` opens the main JD / resume / cover-letter prompt template.

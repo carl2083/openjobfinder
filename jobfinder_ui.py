@@ -537,6 +537,9 @@ class JobFinderWindow(QMainWindow):
         if not user_dir:
             user_dir = str(Path.cwd() / "chrome-profile")
 
+        if sys.platform == "darwin":
+            return self._launch_chrome_mac(config, chrome_path, user_dir)
+
         cmd = [
             chrome_path,
             f"--remote-debugging-port={config.chrome_debug_port}",
@@ -594,6 +597,54 @@ class JobFinderWindow(QMainWindow):
         self.log_message("Attempted to open Seek and ChatGPT tabs.")
         return True
 
+    def _launch_chrome_mac(self, config: Config, chrome_path: str, user_dir: str) -> bool:
+        app_bundle = self._chrome_app_bundle_path(chrome_path)
+        if not app_bundle:
+            QMessageBox.critical(
+                self,
+                "JobFinder",
+                "On macOS, please set Chrome path to the Google Chrome app bundle or executable inside it.",
+            )
+            return False
+
+        seek_url = config.seek_url or "https://www.seek.com.au/"
+        chatgpt_url = config.chatgpt_url or "https://chat.openai.com/"
+        cmd = [
+            "open",
+            "-na",
+            app_bundle,
+            "--args",
+            f"--remote-debugging-port={config.chrome_debug_port}",
+            f"--user-data-dir={user_dir}",
+            "--new-window",
+            seek_url,
+            chatgpt_url,
+        ]
+
+        try:
+            proc = subprocess.Popen(cmd)
+            self.chrome_processes.append(proc)
+            self.log_message("Chrome Debug launched on macOS.")
+        except FileNotFoundError:
+            QMessageBox.critical(self, "JobFinder", "Google Chrome app bundle not found.")
+            return False
+
+        self.signals.status.emit("Launching")
+        self.signals.summary.emit("Opening Seek and ChatGPT. Log in there, then click Continue Run.")
+
+        def finalize_browser_setup() -> None:
+            time.sleep(5)
+            cleared = clear_chatgpt_draft_via_debugger(config, log=self.log_message)
+            self.signals.status.emit("Ready")
+            if cleared:
+                self.signals.summary.emit("Seek and ChatGPT opened. Finish login, then click Continue Run.")
+            else:
+                self.signals.summary.emit("Browser is ready. Finish login, then click Continue Run.")
+
+        threading.Thread(target=finalize_browser_setup, daemon=True).start()
+        self.log_message("Attempted to open Seek and ChatGPT on macOS.")
+        return True
+
     def start_run(self) -> None:
         self.config = self._read_config()
         save_config(CONFIG_PATH, self.config)
@@ -639,6 +690,17 @@ class JobFinderWindow(QMainWindow):
         for path in candidates:
             if Path(path).exists():
                 return path
+        return None
+
+    def _chrome_app_bundle_path(self, chrome_path: str) -> Optional[str]:
+        path = Path(chrome_path)
+        if path.suffix == ".app" and path.exists():
+            return str(path)
+
+        text = str(path)
+        marker = ".app/"
+        if marker in text:
+            return text.split(marker, 1)[0] + ".app"
         return None
 
     def edit_skill_file(self) -> None:
