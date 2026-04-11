@@ -304,7 +304,7 @@ class JobFinderUI:
             anchor="w",
         ).pack(fill=tk.X, pady=(8, 10))
 
-        log_wrap = tk.Frame(shell, bg="#f4f4f4", padx=14, pady=(0, 12))
+        log_wrap = tk.Frame(shell, bg="#f4f4f4", padx=14, pady=12)
         log_wrap.pack(fill=tk.BOTH, expand=False)
         tk.Label(
             log_wrap,
