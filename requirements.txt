@@ -1,3 +1,4 @@
 openpyxl
 selenium
 webdriver-manager
+PySide6
