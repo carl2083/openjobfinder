@@ -43,10 +43,10 @@ def _font_family(kind: str = "body") -> str:
 class JobFinderUI:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("JobFinder")
+        self.simple_mode = sys.platform == "darwin"
+        self.root.title("JobFinder (macOS Safe Mode)" if self.simple_mode else "JobFinder")
         self.root.configure(bg=SURFACE_BG)
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.simple_mode = sys.platform == "darwin"
 
         self.config = load_config(CONFIG_PATH)
         self.chrome_processes = []
@@ -179,14 +179,14 @@ class JobFinderUI:
         header.pack(fill=tk.X)
         tk.Label(
             header,
-            text="JobFinder",
+            text="JobFinder (macOS Safe Mode)",
             bg="#f4f4f4",
             fg="#111111",
             font=(_font_family("display"), 22, "bold"),
         ).pack(anchor="w")
         tk.Label(
             header,
-            text="macOS mode: plain form UI for maximum compatibility.",
+            text="Plain single-column form UI. No sidebar. No style dropdowns. Focused on stable rendering.",
             bg="#f4f4f4",
             fg="#444444",
             font=(_font_family(), 11),
