@@ -34,3 +34,9 @@ Thumbs.db
 
 # Local brainstorming previews
 .superpowers/
+
+# 个人档案数据（含敏感信息，勿上传）
+profiles/
+
+# 样例截图
+Weixin Image_*.jpg

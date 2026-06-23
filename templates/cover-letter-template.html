@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cover Letter</title>
+    <meta name="template-name" content="Minimal Cover Letter">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .page {
+            position: relative;
+            min-height: 100vh;
+            padding: 3rem 3.25rem 3.5rem 3.25rem;
+            overflow: hidden;
+        }
+
+        /* Thin double rule near the top edge */
+        .top-rule {
+            border-top: 1px solid #d9dde2;
+            border-bottom: 1px solid #d9dde2;
+            height: 4px;
+            margin-bottom: 2.5rem;
+        }
+
+        /* Header */
+        .cl-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 2rem;
+            margin-bottom: 2.75rem;
+        }
+
+        .cl-identity {
+            max-width: 55%;
+        }
+
+        .cl-name {
+            font-size: 2rem;
+            line-height: 1.1;
+            font-weight: 700;
+            color: #2b2b2b;
+            letter-spacing: 0.01em;
+            max-width: 6em;
+        }
+
+        .cl-subtitle {
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #3a3f4a;
+            letter-spacing: 0.04em;
+        }
+
+        .cl-accent {
+            margin-top: 0.7rem;
+            width: 72px;
+            height: 2px;
+            background-color: #7f9cb5;
+        }
+
+        .cl-contact {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            margin-top: 0.4rem;
+        }
+
+        .cl-contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 12px;
+            color: #555;
+        }
+
+        .cl-icon {
+            flex: 0 0 auto;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background-color: #9fb2c6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .cl-icon svg {
+            width: 12px;
+            height: 12px;
+            fill: #ffffff;
+        }
+
+        /* Body */
+        .cl-body {
+            position: relative;
+            z-index: 1;
+            font-family: Georgia, 'Times New Roman', Times, serif;
+        }
+
+        .greeting {
+            font-weight: 700;
+            color: #2b2b2b;
+            margin-bottom: 1.1rem;
+        }
+
+        .cover-paragraph {
+            line-height: 1.65;
+            text-align: justify;
+            color: #333;
+            margin-bottom: 1.1rem;
+        }
+
+        /* Signature */
+        .cl-signature {
+            margin-top: 2.25rem;
+        }
+
+        .cl-signoff {
+            font-weight: 700;
+            color: #2b2b2b;
+            margin-bottom: 2.75rem;
+        }
+
+        .cl-sign-name {
+            font-weight: 700;
+            color: #2b2b2b;
+            font-size: 0.95rem;
+        }
+
+        /* Decorative corner arcs (bottom-right) */
+        .cl-corner {
+            position: absolute;
+            right: -60px;
+            bottom: -60px;
+            width: 230px;
+            height: 230px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .cl-corner svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        @media print {
+            html, body { background-color: #ffffff; }
+            .cl-icon {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="top-rule"></div>
+
+        <header class="cl-header">
+            <div class="cl-identity">
+                <h1 class="cl-name">{{HEADER_NAME}}</h1>
+                <div class="cl-subtitle">{{HEADER_TITLE}}</div>
+                <div class="cl-accent"></div>
+            </div>
+            <div class="cl-contact">
+                {{CONTACT_BLOCK}}
+            </div>
+        </header>
+
+        <main class="cl-body">
+            {{COVER_SECTION}}
+
+            <div class="cl-signature">
+                <p class="cl-signoff">Kind regards,</p>
+                <p class="cl-sign-name">{{SIGNATURE_NAME}}</p>
+            </div>
+        </main>
+
+        <div class="cl-corner">
+            <svg viewBox="0 0 230 230" xmlns="http://www.w3.org/2000/svg" fill="none">
+                <path d="M230 30 A200 200 0 0 0 30 230" stroke="#e7e9ec" stroke-width="2"/>
+                <path d="M230 70 A160 160 0 0 0 70 230" stroke="#eceef1" stroke-width="2"/>
+                <path d="M230 110 A120 120 0 0 0 110 230" stroke="#f1f2f4" stroke-width="2"/>
+            </svg>
+        </div>
+    </div>
+</body>
+</html>

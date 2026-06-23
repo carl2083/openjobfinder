@@ -4,6 +4,7 @@ import random
 import re
 from pathlib import Path
 from zipfile import BadZipFile
+from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import fields
 from datetime import datetime
@@ -30,6 +31,18 @@ COVER_LETTER_STYLE_OPTIONS = [
     "Operational Calm & Reliability",
     "Strategic Career Transition",
 ]
+
+# Cover letter visual DESIGN (PDF layout) — distinct from the writing-tone
+# style above. Maps a selectable design name to its HTML template.
+DEFAULT_COVER_LETTER_DESIGN = "Minimal Cover Letter"
+COVER_LETTER_DESIGN_OPTIONS = [
+    "Minimal Cover Letter",
+    "Navy Gold",
+]
+COVER_LETTER_DESIGN_TEMPLATES = {
+    "Minimal Cover Letter": "templates/cover-letter-template.html",
+    "Navy Gold": "templates/navy-gold-template.html",
+}
 
 
 DEFAULT_PROMPT_TEMPLATE = """
@@ -274,21 +287,346 @@ class Config:
     user_name: str = "carl chen"
     resume_style: str = "ATS-Focused Professional"
     cover_letter_style: str = DEFAULT_COVER_LETTER_STYLE
+    cover_letter_design: str = DEFAULT_COVER_LETTER_DESIGN
+    skill_profile_path: str = SKILL_PROFILE_PATH
+    prompt_template_path: str = PROMPT_TEMPLATE_PATH
+    profile_id: str = "default"
+    profile_label: str = "Default"
+
+
+@dataclass
+class ProfileEntry:
+    id: str
+    label: str
+    directory: str
+
+
+@dataclass
+class AppConfig:
+    active_profile_id: str = "default"
+    profiles: List[ProfileEntry] = None  # type: ignore[assignment]
+    chrome_debug_port: int = 9222
+    chrome_user_data_dir: str = ""
+    chrome_path: str = ""
+    initial_login_completed: bool = False
+
+    def __post_init__(self) -> None:
+        if self.profiles is None:
+            self.profiles = [ProfileEntry(id="default", label="Default", directory="profiles/default")]
+
+
+def _workspace_root(config_path: str) -> Path:
+    return Path(config_path).resolve().parent
+
+
+def _sanitize_profile_id(label: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "-", (label or "").strip().lower()).strip("-")
+    return normalized or "profile"
+
+
+def _dedupe_profile_id(existing_ids: List[str], preferred_id: str) -> str:
+    if preferred_id not in existing_ids:
+        return preferred_id
+    counter = 2
+    while f"{preferred_id}-{counter}" in existing_ids:
+        counter += 1
+    return f"{preferred_id}-{counter}"
+
+
+def _profile_directory(profile_id: str) -> str:
+    return str(Path("profiles") / profile_id)
+
+
+def _default_output_excel(profile_id: str) -> str:
+    return str(Path("profiles") / profile_id / f"job_results-{profile_id}.xlsx")
+
+
+def _default_pdf_output_dir(profile_id: str) -> str:
+    return str(Path("profiles") / profile_id / "pdf_output")
+
+
+def _default_skill_profile_path(profile_id: str) -> str:
+    return str(Path("profiles") / profile_id / "skill.md")
+
+
+def _default_prompt_template_path(profile_id: str) -> str:
+    return str(Path("profiles") / profile_id / "prompt.md")
+
+
+def _default_profile_config(profile_id: str, label: str) -> Config:
+    return Config(
+        output_excel=_default_output_excel(profile_id),
+        pdf_output_dir=_default_pdf_output_dir(profile_id),
+        skill_profile_path=_default_skill_profile_path(profile_id),
+        prompt_template_path=_default_prompt_template_path(profile_id),
+        profile_id=profile_id,
+        profile_label=label,
+    )
+
+
+def _profile_config_path(app_config: AppConfig, profile_id: str) -> Path:
+    profile = next((p for p in app_config.profiles if p.id == profile_id), None)
+    if profile is None:
+        profile = app_config.profiles[0]
+    return Path(profile.directory) / "profile.json"
+
+
+def _app_config_to_dict(app_config: AppConfig) -> Dict[str, Any]:
+    return {
+        "active_profile_id": app_config.active_profile_id,
+        "profiles": [asdict(profile) for profile in app_config.profiles],
+        "chrome_debug_port": app_config.chrome_debug_port,
+        "chrome_user_data_dir": app_config.chrome_user_data_dir,
+        "chrome_path": app_config.chrome_path,
+        "initial_login_completed": app_config.initial_login_completed,
+    }
+
+
+def _config_from_legacy_data(data: Dict[str, Any]) -> Config:
+    allowed = {field.name for field in fields(Config)}
+    sanitized = {key: value for key, value in data.items() if key in allowed}
+    config = Config(**sanitized)
+    if not getattr(config, "skill_profile_path", ""):
+        config.skill_profile_path = SKILL_PROFILE_PATH
+    if not getattr(config, "prompt_template_path", ""):
+        config.prompt_template_path = PROMPT_TEMPLATE_PATH
+    return config
+
+
+def _is_app_config_shape(data: Dict[str, Any]) -> bool:
+    return "profiles" in data and isinstance(data.get("profiles"), list)
+
+
+def load_app_config(path: str = DEFAULT_CONFIG_PATH) -> AppConfig:
+    root = _workspace_root(path)
+    config_path = Path(path)
+    if not config_path.exists():
+        return AppConfig()
+    with config_path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not _is_app_config_shape(data):
+        return migrate_legacy_config(path)
+
+    profiles: List[ProfileEntry] = []
+    for item in data.get("profiles", []):
+        if not isinstance(item, dict):
+            continue
+        profile_id = str(item.get("id", "")).strip() or "default"
+        label = str(item.get("label", "")).strip() or profile_id.title()
+        directory = str(item.get("directory", "")).strip() or _profile_directory(profile_id)
+        profiles.append(ProfileEntry(id=profile_id, label=label, directory=directory))
+    if not profiles:
+        profiles = [ProfileEntry(id="default", label="Default", directory=_profile_directory("default"))]
+
+    app_config = AppConfig(
+        active_profile_id=str(data.get("active_profile_id", profiles[0].id) or profiles[0].id),
+        profiles=profiles,
+        chrome_debug_port=int(data.get("chrome_debug_port", 9222) or 9222),
+        chrome_user_data_dir=str(data.get("chrome_user_data_dir", "") or ""),
+        chrome_path=str(data.get("chrome_path", "") or ""),
+        initial_login_completed=bool(data.get("initial_login_completed", False)),
+    )
+
+    if app_config.active_profile_id not in {profile.id for profile in app_config.profiles}:
+        app_config.active_profile_id = app_config.profiles[0].id
+
+    for profile in app_config.profiles:
+        profile_dir = root / profile.directory
+        profile_dir.mkdir(parents=True, exist_ok=True)
+    return app_config
+
+
+def save_app_config(path: str, app_config: AppConfig) -> None:
+    root = _workspace_root(path)
+    for profile in app_config.profiles:
+        (root / profile.directory).mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(_app_config_to_dict(app_config), f, indent=2)
+
+
+def load_profile_config(
+    app_config: AppConfig,
+    profile_id: Optional[str] = None,
+    config_path: str = DEFAULT_CONFIG_PATH,
+) -> Config:
+    root = _workspace_root(config_path)
+    target_profile_id = profile_id or app_config.active_profile_id
+    profile = next((p for p in app_config.profiles if p.id == target_profile_id), None)
+    if profile is None:
+        profile = app_config.profiles[0]
+        target_profile_id = profile.id
+
+    path_obj = root / _profile_config_path(app_config, target_profile_id)
+    if path_obj.exists():
+        with path_obj.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        config = _config_from_legacy_data(data)
+    else:
+        config = _default_profile_config(profile.id, profile.label)
+
+    config.profile_id = profile.id
+    config.profile_label = profile.label
+    config.chrome_debug_port = app_config.chrome_debug_port
+    config.chrome_user_data_dir = app_config.chrome_user_data_dir
+    config.chrome_path = app_config.chrome_path
+    if not config.skill_profile_path:
+        config.skill_profile_path = _default_skill_profile_path(profile.id)
+    if not config.prompt_template_path:
+        config.prompt_template_path = _default_prompt_template_path(profile.id)
+    if not config.output_excel:
+        config.output_excel = _default_output_excel(profile.id)
+    if not config.pdf_output_dir:
+        config.pdf_output_dir = _default_pdf_output_dir(profile.id)
+    return config
+
+
+def save_profile_config(
+    app_config: AppConfig,
+    config: Config,
+    profile_id: Optional[str] = None,
+    config_path: str = DEFAULT_CONFIG_PATH,
+) -> None:
+    root = _workspace_root(config_path)
+    target_profile_id = profile_id or config.profile_id or app_config.active_profile_id
+    profile = next((p for p in app_config.profiles if p.id == target_profile_id), None)
+    if profile is None:
+        raise ValueError(f"Unknown profile id: {target_profile_id}")
+
+    config.profile_id = profile.id
+    config.profile_label = profile.label
+    profile_dir = root / profile.directory
+    profile_dir.mkdir(parents=True, exist_ok=True)
+
+    config.chrome_debug_port = app_config.chrome_debug_port
+    config.chrome_user_data_dir = app_config.chrome_user_data_dir
+    config.chrome_path = app_config.chrome_path
+    if not config.skill_profile_path:
+        config.skill_profile_path = _default_skill_profile_path(profile.id)
+    if not config.prompt_template_path:
+        config.prompt_template_path = _default_prompt_template_path(profile.id)
+    if not config.output_excel:
+        config.output_excel = _default_output_excel(profile.id)
+    if not config.pdf_output_dir:
+        config.pdf_output_dir = _default_pdf_output_dir(profile.id)
+
+    profile_path = root / _profile_config_path(app_config, profile.id)
+    with profile_path.open("w", encoding="utf-8") as f:
+        json.dump(asdict(config), f, indent=2)
+
+
+def migrate_legacy_config(path: str = DEFAULT_CONFIG_PATH) -> AppConfig:
+    root = _workspace_root(path)
+    config_path = Path(path)
+    legacy_data: Dict[str, Any] = {}
+    if config_path.exists():
+        with config_path.open("r", encoding="utf-8") as f:
+            legacy_data = json.load(f)
+
+    legacy_config = _config_from_legacy_data(legacy_data) if legacy_data else Config()
+    profile_id = "default"
+    profile_label = "Default"
+    profile_dir = root / _profile_directory(profile_id)
+    profile_dir.mkdir(parents=True, exist_ok=True)
+
+    if not legacy_config.skill_profile_path or legacy_config.skill_profile_path == SKILL_PROFILE_PATH:
+        source_skill = root / SKILL_PROFILE_PATH
+        if source_skill.exists():
+            target = profile_dir / "skill.md"
+            if not target.exists():
+                target.write_text(source_skill.read_text(encoding="utf-8"), encoding="utf-8")
+        legacy_config.skill_profile_path = str(Path(_profile_directory(profile_id)) / "skill.md")
+    if not legacy_config.prompt_template_path or legacy_config.prompt_template_path == PROMPT_TEMPLATE_PATH:
+        source_prompt = root / PROMPT_TEMPLATE_PATH
+        if source_prompt.exists():
+            target = profile_dir / "prompt.md"
+            if not target.exists():
+                target.write_text(source_prompt.read_text(encoding="utf-8"), encoding="utf-8")
+        legacy_config.prompt_template_path = str(Path(_profile_directory(profile_id)) / "prompt.md")
+
+    legacy_config.profile_id = profile_id
+    legacy_config.profile_label = profile_label
+    app_config = AppConfig(
+        active_profile_id=profile_id,
+        profiles=[ProfileEntry(id=profile_id, label=profile_label, directory=_profile_directory(profile_id))],
+        chrome_debug_port=legacy_config.chrome_debug_port,
+        chrome_user_data_dir=legacy_config.chrome_user_data_dir,
+        chrome_path=legacy_config.chrome_path,
+        initial_login_completed=False,
+    )
+    save_profile_config(app_config, legacy_config, profile_id=profile_id, config_path=path)
+    save_app_config(path, app_config)
+    return app_config
+
+
+def create_profile(
+    app_config: AppConfig,
+    label: str,
+    config_path: str = DEFAULT_CONFIG_PATH,
+) -> ProfileEntry:
+    existing_ids = [profile.id for profile in app_config.profiles]
+    profile_id = _dedupe_profile_id(existing_ids, _sanitize_profile_id(label))
+    profile = ProfileEntry(id=profile_id, label=label.strip() or profile_id.title(), directory=_profile_directory(profile_id))
+    app_config.profiles.append(profile)
+    config = _default_profile_config(profile.id, profile.label)
+    save_app_config(config_path, app_config)
+    save_profile_config(app_config, config, profile_id=profile.id, config_path=config_path)
+    return profile
+
+
+def rename_profile(
+    app_config: AppConfig,
+    profile_id: str,
+    new_label: str,
+    config_path: str = DEFAULT_CONFIG_PATH,
+) -> None:
+    profile = next((p for p in app_config.profiles if p.id == profile_id), None)
+    if profile is None:
+        raise ValueError(f"Unknown profile id: {profile_id}")
+    profile.label = new_label.strip() or profile.label
+    config = load_profile_config(app_config, profile_id=profile_id, config_path=config_path)
+    config.profile_label = profile.label
+    save_profile_config(app_config, config, profile_id=profile_id, config_path=config_path)
+    save_app_config(config_path, app_config)
+
+
+def delete_profile(
+    app_config: AppConfig,
+    profile_id: str,
+    config_path: str = DEFAULT_CONFIG_PATH,
+) -> None:
+    if len(app_config.profiles) <= 1:
+        raise ValueError("Cannot delete the last remaining profile.")
+    profile = next((p for p in app_config.profiles if p.id == profile_id), None)
+    if profile is None:
+        raise ValueError(f"Unknown profile id: {profile_id}")
+    root = _workspace_root(config_path)
+    profile_dir = root / profile.directory
+    if profile_dir.exists():
+        for child in sorted(profile_dir.rglob("*"), reverse=True):
+            if child.is_file():
+                child.unlink()
+            elif child.is_dir():
+                child.rmdir()
+        profile_dir.rmdir()
+    app_config.profiles = [item for item in app_config.profiles if item.id != profile_id]
+    if app_config.active_profile_id == profile_id:
+        app_config.active_profile_id = app_config.profiles[0].id
+    save_app_config(config_path, app_config)
 
 
 def load_config(path: str) -> Config:
-    if not os.path.exists(path):
-        return Config()
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    allowed = {field.name for field in fields(Config)}
-    sanitized = {key: value for key, value in data.items() if key in allowed}
-    return Config(**sanitized)
+    app_config = load_app_config(path)
+    return load_profile_config(app_config, config_path=path)
 
 
 def save_config(path: str, config: Config) -> None:
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(config.__dict__, f, indent=2)
+    app_config = load_app_config(path)
+    app_config.active_profile_id = config.profile_id or app_config.active_profile_id
+    app_config.chrome_debug_port = config.chrome_debug_port
+    app_config.chrome_user_data_dir = config.chrome_user_data_dir
+    app_config.chrome_path = config.chrome_path
+    save_app_config(path, app_config)
+    save_profile_config(app_config, config, profile_id=app_config.active_profile_id, config_path=path)
 
 
 def load_job_ids_from_excel(path: str) -> List[str]:
@@ -360,12 +698,14 @@ def format_list(value: Any) -> str:
 
 
 def ensure_prompt_template_file(path: str = PROMPT_TEMPLATE_PATH) -> str:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
     if not os.path.exists(path):
         Path(path).write_text(DEFAULT_PROMPT_TEMPLATE.strip() + "\n", encoding="utf-8")
     return path
 
 
 def ensure_skill_profile_file(path: str = SKILL_PROFILE_PATH) -> str:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
     if not os.path.exists(path):
         Path(path).write_text(DEFAULT_SKILL_PROFILE_TEMPLATE, encoding="utf-8")
     return path
@@ -403,9 +743,52 @@ Use the selected styles as tone and structure guidance while keeping everything 
 """.strip()
 
 
+def _candidate_identity_block(config: Config) -> str:
+    return """
+CURRENT CANDIDATE SETTINGS:
+- Profile label: {profile_label}
+- Full name: {user_name}
+- Address: {user_address}
+- Phone: {user_phone}
+- Email: {user_email}
+
+CRITICAL IDENTITY RULES:
+- Treat the candidate settings above as the authoritative identity for this run.
+- Do not reuse any name, address, phone, or email from earlier chats or previous candidates.
+- In `other.resume_sections`, set `name`, `address`, `phone`, and `email` from these settings.
+- In the cover letter signature and contact block, use these same settings.
+- If a setting is blank, leave that field blank instead of inventing a value.
+""".strip()
+
+
+def _truth_guard_block() -> str:
+    return """
+TRUTH AND FORMAT RULES:
+- Do not infer or exaggerate years of experience.
+- Do not write claims like `7+ years`, `5+ years`, or similar unless the candidate source material explicitly supports that exact duration.
+- If exact years are unclear, describe the background qualitatively instead of inventing a number.
+- Do not invent seniority, certifications, employers, projects, achievements, tools, or job titles.
+- Capitalize personal names and job titles normally in the final output.
+
+MANDATORY OUTPUT (DO NOT SKIP - APPLIES REGARDLESS OF SCORES):
+- ALWAYS produce a complete, tailored resume AND a complete cover letter for EVERY job, even when the suitability or interest scores are low or you would otherwise recommend skipping the role.
+- The suitability/interest scores and any skip recommendation are for my reference ONLY. They must NEVER cause you to leave resume or cover letter content empty.
+- `other.resume_sections` must be fully populated every time: `professional_summary`, `experience` (each role with 6-10 X-Y-Z bullets), `education`, and `skills`. Never return empty strings or empty arrays for these fields.
+- `other."Cover Letter"` must ALWAYS contain a full 250-400 word cover letter body. Never return it empty.
+- If the role is a weak fit, still write the strongest possible TRUTHFUL resume and cover letter using transferable or adjacent experience - never fabricate to compensate.
+
+COVER LETTER OUTPUT RULES:
+- Return only the cover letter body content.
+- You may include the salutation line such as `Dear Hiring Manager,` or a named addressee if the job ad clearly provides one.
+- Do not include the candidate contact block at the top.
+- Do not repeat the candidate name, address, phone, or email inside the body unless the letter naturally requires it.
+- Do not include a closing signature block like `Kind regards` plus the candidate name.
+""".strip()
+
+
 def build_prompt(job_description: str, config: Config) -> str:
-    prompt_template = load_prompt_template()
-    skill_profile = load_skill_profile()
+    prompt_template = load_prompt_template(getattr(config, "prompt_template_path", PROMPT_TEMPLATE_PATH))
+    skill_profile = load_skill_profile(getattr(config, "skill_profile_path", SKILL_PROFILE_PATH))
     skill_block = ""
     if skill_profile:
         skill_block = (
@@ -418,8 +801,18 @@ def build_prompt(job_description: str, config: Config) -> str:
             config, "cover_letter_style", DEFAULT_COVER_LETTER_STYLE
         ),
     )
+    candidate_block = _candidate_identity_block(config).format(
+        profile_label=getattr(config, "profile_label", ""),
+        user_name=getattr(config, "user_name", "") or "",
+        user_address=getattr(config, "user_address", "") or "",
+        user_phone=getattr(config, "user_phone", "") or "",
+        user_email=getattr(config, "user_email", "") or "",
+    )
+    truth_block = _truth_guard_block()
     sections = [prompt_template.strip()]
     sections.append(style_block)
+    sections.append(candidate_block)
+    sections.append(truth_block)
     if skill_block:
         sections.append(skill_block.rstrip())
     sections.append(f"JOB DESCRIPTION:\n{job_description}")
@@ -491,6 +884,7 @@ def build_row(payload: Dict[str, Any], config: Config) -> List[Any]:
 
 
 def ensure_workbook(path: str) -> Workbook:
+    Path(path).expanduser().parent.mkdir(parents=True, exist_ok=True)
     if os.path.exists(path):
         try:
             wb = load_workbook(path)

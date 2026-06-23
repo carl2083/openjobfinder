@@ -22,6 +22,7 @@ Then:
 
 - Fill `Basic Setup`: location, keyword, run count or a single JD URL.
 - Fill `Advanced` only if you need to override paths or URLs.
+- Use the profile tabs if you want separate candidate workspaces, such as one for yourself and one for a friend.
 - Click the main button once to launch Debug Chrome.
 - Log in to Seek and ChatGPT in that browser.
 - Click the same button again to continue the run.
@@ -44,6 +45,7 @@ Then:
 
 - Fill `Basic Setup`: location, keyword, run count or a single JD URL.
 - Fill `Advanced` only if you need to override paths or URLs.
+- Use the profile tabs if you want separate candidate workspaces, such as one for yourself and one for a friend.
 - Click the main button once to launch Debug Chrome.
 - Log in to Seek and ChatGPT in that browser.
 - Click the same button again to continue the run.
@@ -55,6 +57,7 @@ Then:
 - If you pulled a newer version of the app, run `pip install -r requirements.txt` again so `PySide6` is installed.
 - `Edit skill.md` creates a default template for new users, including a "Copy this to ChatGPT" prompt for building a reusable skills profile.
 - `Edit prompt` opens the main JD / resume / cover-letter prompt template.
+- Each profile has its own `skill.md`, `prompt.md`, and Excel output file so different people's job applications do not mix by default.
 - In `Advanced`, you can choose both `Resume Style` and `Cover Letter Style`.
 - Cover letter generation stays on by default, and PDF export is enabled by default for new configs.
 - Cover letters are guided to stay close to one page, usually 250-400 words, across 3-6 paragraphs, focused on key qualifications instead of repeating the full resume.
